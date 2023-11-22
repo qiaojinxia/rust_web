@@ -25,14 +25,13 @@ basic rust web framework use actix_web,sqlx
 1. 克隆这个仓库：
 
    ```bash
-   git clone https://github.com/yourusername/yourproject.git
+   git clone https://github.com/qiaojinxia/rust_web.git
    cd yourproject
 编译和运行项目：
 
-bash
-Copy code
-cargo build
-cargo run
+```bash
+   cargo build
+   cargo run
 这将启动 HTTP 服务器，并监听默认端口（通常是 8080）。
 
 配置文件
@@ -45,6 +44,7 @@ cargo run
 这个项目基于 MIT 许可证。有关详细信息，请查看 LICENSE 文件。
 
 go
+
 Copy code
 
 上述 `README.md` 文件是一个基本的模板，用于描述一个 Rust 后端框架项目。您可以根据您的实际项目需求和细节进行修改和扩展。确保在项目中包含适当的许可证文件，以符合法律要求。
