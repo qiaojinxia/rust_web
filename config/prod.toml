@@ -1,0 +1,13 @@
+# prod.toml
+# 数据库连接：指向生产数据库。
+# 日志级别：通常设置为较低以减少日志文件大小。
+# API密钥和凭证：生产环境专用的密钥。
+
+[database]
+url = "postgres://user:password@prod-db-server/myapp_prod"
+
+[logging]
+level = "error"
+
+[external_api]
+api_key = "prod-key-5678"

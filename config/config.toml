@@ -1,0 +1,15 @@
+# config.toml
+# 应用设置：如应用名称、版本号。
+# 日志配置：如日志格式、日志文件路径。
+# 共享服务配置：如用于所有环境的外部API的基本URL。
+[application]
+name = "MyApp"
+version = "1.0.0"
+
+[logging]
+level = "info"
+file = "logs/myapp.log"
+
+[external_api]
+base_url = "https://api.example.com/"
+

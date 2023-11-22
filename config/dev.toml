@@ -1,0 +1,9 @@
+# dev.toml
+[database]
+url = "mysql://root:1XXUkvSRm0Ai@dcs-service-78457b23c30e:4006/all-in-gpt" # 例如: "postgres://user:password@localhost/myapp"
+init_sql = "init_db.sql"
+
+[server]
+host = "localhost" # 例如: "127.0.0.1"
+port = 8080 # 例如: 8080
+
