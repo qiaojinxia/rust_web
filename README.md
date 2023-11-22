@@ -27,13 +27,14 @@ basic rust web framework use actix_web,sqlx
    ```bash
    git clone https://github.com/qiaojinxia/rust_web.git
    cd yourproject
+   ```
    
 2. 编译和运行项目：
 
-```bash
-   cargo build
-   cargo run
-
+   ```bash
+      cargo build
+      cargo run
+   ```
 
 这将启动 HTTP 服务器，并监听默认端口（通常是 8080）。
 
