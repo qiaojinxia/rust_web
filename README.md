@@ -5,7 +5,7 @@ basic rust web framework use actix_web,sqlx
 这是一个基本的 Rust 后端框架示例，使用了以下关键库和工具：
 
 - [actix-web](https://actix.rs/): 用于构建高性能的 Web 服务。
-- [sqlx](https://github.com/launchbadge/sqlx): 用于异步数据库操作。
+- [sea-orm](https://github.com/SeaQL/sea-orm): 用于异步数据库操作。
 - [env_logger](https://github.com/env-logger-rs/env_logger): 用于记录日志。
 - [toml](https://github.com/toml-lang/toml): 用于配置文件。
 
