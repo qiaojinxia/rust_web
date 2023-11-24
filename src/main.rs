@@ -2,13 +2,17 @@ mod routes;
 mod config;
 mod app;
 mod utils; 
-use actix_web::{App, HttpServer};
+mod models;
+mod services;
+use actix_web::{web::Data, App, HttpServer};
 use std::sync::mpsc;
 use std::thread;
 use signal_hook::consts::signal::{SIGINT, SIGTERM};
 use signal_hook::iterator::Signals;
 use tokio::sync::oneshot;
 use config::globals;
+use routes::user_routes;
+
 
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
@@ -24,12 +28,16 @@ async fn main() -> std::io::Result<()> {
 
     // 创建 HTTP 服务器
     let server = HttpServer::new(|| {
+        
         App::new()
-            .configure(routes::test::api_config)
-            // ... 其他配置 ...
-    })
-    .bind(format!("{}:{}",globals::APP_CONFIG.server.host, globals::APP_CONFIG.server.port))?
-    .run();
+            .app_data(Data::new( globals::DB_POOL.get()
+            .expect("DB_POOL not initialized").clone())) // 存储应用状态
+            .configure(user_routes::api_config)
+            
+    }).bind(format!("{}:{}",
+        globals::APP_CONFIG.server.host, 
+        globals::APP_CONFIG.server.port))?
+        .run();
 
     let (shutdown_tx, shutdown_rx) = oneshot::channel();
 

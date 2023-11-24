@@ -2,20 +2,19 @@
 // use crate::config::{self, AppConfig};
 // use crate::db::{self, DatabasePool};
 use crate::utils::logger;
-use crate::utils::mysql;
+use crate::utils::database;
 use crate::config::globals;
 use log::{info, error}; // 导入日志宏
-
+use std::sync::Arc;
 
 // 一个初始化数据库连接的函数
-pub async fn init_db() {
-    let database_url = globals::APP_CONFIG.database.url.as_str();
-    info!("connecting database config url: {}", database_url);
-    match mysql::create_db_pool(database_url).await {
+pub async fn conn_db() {
+    info!("connecting database config url: {}", globals::APP_CONFIG.database.url);
+    match database::create_db_pool(&globals::APP_CONFIG).await {
         Ok(pool) => {
             info!("Database connection established successfully.");
-            let mut global_pool = globals::GLOBAL_DB_POOL.lock().unwrap();
-            *global_pool = Some(pool);
+            let db_pool = Arc::new(pool);
+            globals::DB_POOL.set(db_pool).expect("Failed to set DB_POOL");
         }
         Err(e) => {
             error!("Failed to connect to database: {}", e);
@@ -23,6 +22,20 @@ pub async fn init_db() {
         }
     }
 }
+
+// pub async fn create_db(){
+//     let db = &match db.get_database_backend() {
+//        DbBackend::MySql => {
+//            db.execute(Statement::from_string(
+//                db.get_database_backend(),
+//                format!("CREATE DATABASE IF NOT EXISTS `{}`;", globals::APP_CONFIG.database.name),
+//            ))
+//            .await?;
+
+//            let url = format!("{}/{}", DATABASE_URL, globals::APP_CONFIG.database.name);
+//            Database::connect(&url).await?
+//        }
+// }
 
 // 初始化日志系统
 pub fn init_logger() {
@@ -33,5 +46,5 @@ pub fn init_logger() {
 // 一个总的初始化函数，用于集中调用所有初始化逻辑
 pub async fn init() {
     init_logger();
-    init_db().await;
+    conn_db().await;
 }

@@ -1,7 +1,14 @@
 # dev.toml
 [database]
-url = "mysql://root:1XXUkvSRm0Ai@dcs-service-78457b23c30e:4006/all-in-gpt" # 例如: "postgres://user:password@localhost/myapp"
+url = "mysql://root:5GuvROS77DqG@dcs-service-0c87c9406fda:4064/all-in-gpt" # 例如: "postgres://user:password@localhost/myapp"
 init_sql = "init_db.sql"
+max_connections = 100
+min_connections = 5
+connect_timeout = 10
+acquire_timeout = 8
+idle_timeout = 8
+max_lifetime = 8
+sqlx_logging = true
 
 [server]
 host = "localhost" # 例如: "127.0.0.1"
