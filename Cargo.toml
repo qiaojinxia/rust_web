@@ -6,19 +6,21 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-actix-web = "4.4.0"
+actix-web = "4.4.1"
 actix-rt = "2.5"  # Use the latest version compatible with your project
 signal-hook = "0.3" # Use the latest version compatible with your project
 tokio = { version = "1.0", features = ["full"] } # 启用 tokio 的全部特性
 anyhow = "1.0"
 serde = { version = "1.0", features = ["derive"] }
-toml = "0.5"
+toml = "0.8.8"
 once_cell = "1.8"
 log = "0.4"
-env_logger = "0.9"
+env_logger = "0.10.1"
 thiserror = "1.0"
 sea-orm = { version = "^0.12.0", features = [  "sqlx-mysql", "runtime-tokio-native-tls", "macros"] }
 argon2 = "0.5"
-bcrypt = "0.10.0"
-jsonwebtoken = "7"
+bcrypt = "0.15.0"
+jsonwebtoken = "9.1.0"
 chrono = "0.4"
+serde_json = "1.0.108"
+validator = { version = "0.16", features = ["derive"] }

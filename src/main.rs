@@ -1,8 +1,9 @@
 mod routes;
 mod config;
 mod app;
-mod utils; 
-mod models;
+mod common;
+mod schema;
+mod dto;
 mod services;
 use actix_web::{web::Data, App, HttpServer};
 use std::sync::mpsc;
@@ -11,7 +12,6 @@ use signal_hook::consts::signal::{SIGINT, SIGTERM};
 use signal_hook::iterator::Signals;
 use tokio::sync::oneshot;
 use config::globals;
-use routes::user_routes;
 
 
 #[actix_rt::main]
@@ -32,7 +32,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .app_data(Data::new( globals::DB_POOL.get()
             .expect("DB_POOL not initialized").clone())) // 存储应用状态
-            .configure(user_routes::api_config)
+            .configure(routes::admin::auth_routes::api_config)
             
     }).bind(format!("{}:{}",
         globals::APP_CONFIG.server.host, 

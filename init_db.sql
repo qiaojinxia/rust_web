@@ -1,84 +1,129 @@
-/*
- Navicat Premium Data Transfer
+-- 用户表
+CREATE TABLE sys_user (
+                          id INT AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
+                          user_name VARCHAR(64) NOT NULL COMMENT '用户名',
+                          password VARCHAR(256) NOT NULL COMMENT '密码', -- 密码长度增加以存储hash值
+                          email VARCHAR(128) NOT NULL UNIQUE COMMENT '邮箱', -- 增加长度并添加唯一约束
+                          gender ENUM('M', 'F', 'O') NOT NULL COMMENT '性别', -- 使用ENUM类型表示性别
+                          mobile VARCHAR(15) NOT NULL UNIQUE COMMENT '手机号码', -- 手机号码长度增加
+                          avatar VARCHAR(256) COMMENT '头像',
+                          create_user VARCHAR(64) NOT NULL COMMENT '创建者',
+                          create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                          update_user VARCHAR(64) NOT NULL COMMENT '更新者',
+                          update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+                          last_login TIMESTAMP COMMENT '上次登录时间',
+                          is_deleted TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否删除'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
- Source Server         : cs-cn-east-71.teamcode.com
- Source Server Type    : MySQL
- Source Server Version : 80027
- Source Host           : cs-cn-east-71.teamcode.com:4064
- Source Schema         : all-in-gpt
+-- 角色表
+CREATE TABLE sys_role (
+                          id INT AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
+                          role_id VARCHAR(64) NOT NULL UNIQUE COMMENT '角色ID',
+                          role_name VARCHAR(64) NOT NULL COMMENT '角色名称',
+                          description VARCHAR(255) COMMENT '描述',
+                          create_user VARCHAR(64) NOT NULL COMMENT '创建者',
+                          create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                          update_user VARCHAR(64) NOT NULL COMMENT '更新者',
+                          update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
- Target Server Type    : MySQL
- Target Server Version : 80027
- File Encoding         : 65001
 
- Date: 24/11/2023 19:43:32
-*/
+-- 权限表
+CREATE TABLE sys_permission (
+                                id INT AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
+                                permission_name VARCHAR(64) NOT NULL COMMENT '权限名称',
+                                description VARCHAR(255) COMMENT '描述',
+                                create_user VARCHAR(64) NOT NULL COMMENT '创建者',
+                                create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                                update_user VARCHAR(64) NOT NULL COMMENT '更新者',
+                                update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-SET NAMES utf8mb4;
-SET FOREIGN_KEY_CHECKS = 0;
+-- 菜单表
+DROP TABLE IF EXISTS sys_menu;
+CREATE TABLE sys_menu (
+                          id INT AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
+                          menu_name VARCHAR(64) NOT NULL COMMENT '菜单名称',
+                          permission_id INT COMMENT '关联的权限ID',
+                          url VARCHAR(255) NOT NULL COMMENT '菜单URL',
+                          sort TINYINT DEFAULT NULL COMMENT '菜单排序',
+                          parent_id INT DEFAULT NULL COMMENT '父菜单ID',
+                          redirect VARCHAR(255) COMMENT '重定向地址',
+                          guards TINYINT COMMENT '权限守卫',
+                          component VARCHAR(255) COMMENT '组件路径',
+                          meta JSON COMMENT '元数据（包含样式、图标、附加权限、附加参数等）',
+                          hidden TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否隐藏',
+                          create_user VARCHAR(64) NOT NULL COMMENT '创建者',
+                          create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                          update_user VARCHAR(64) NOT NULL COMMENT '更新者',
+                          update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+                          is_visible TINYINT(1) NOT NULL DEFAULT 1 COMMENT '是否显示',
+                          is_deleted TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否删除'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- ----------------------------
--- Table structure for Permissions
--- ----------------------------
-DROP TABLE IF EXISTS `Permissions`;
-CREATE TABLE `Permissions` (
-  `PermissionID` int NOT NULL AUTO_INCREMENT,
-  `PermissionKey` varchar(100) NOT NULL,
-  `Description` text,
-  PRIMARY KEY (`PermissionID`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
--- ----------------------------
--- Table structure for RolePermissions
--- ----------------------------
-DROP TABLE IF EXISTS `RolePermissions`;
-CREATE TABLE `RolePermissions` (
-  `RoleID` int NOT NULL,
-  `PermissionID` int NOT NULL,
-  PRIMARY KEY (`RoleID`,`PermissionID`),
-  KEY `PermissionID` (`PermissionID`),
-  CONSTRAINT `RolePermissions_ibfk_1` FOREIGN KEY (`RoleID`) REFERENCES `Roles` (`RoleID`),
-  CONSTRAINT `RolePermissions_ibfk_2` FOREIGN KEY (`PermissionID`) REFERENCES `Permissions` (`PermissionID`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+-- 用户角色关联表
+CREATE TABLE sys_user_role (
+                               id INT AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
+                               user_id INT NOT NULL COMMENT '用户ID',
+                               role_id INT NOT NULL COMMENT '角色ID',
+                               create_user VARCHAR(64) NOT NULL COMMENT '创建者',
+                               create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                               update_user VARCHAR(64) NOT NULL COMMENT '更新者',
+                               update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+                               FOREIGN KEY (user_id) REFERENCES sys_user(id),
+                               FOREIGN KEY (role_id) REFERENCES sys_role(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- ----------------------------
--- Table structure for Roles
--- ----------------------------
-DROP TABLE IF EXISTS `Roles`;
-CREATE TABLE `Roles` (
-  `RoleID` int NOT NULL AUTO_INCREMENT,
-  `RoleName` varchar(50) NOT NULL,
-  `Description` text,
-  PRIMARY KEY (`RoleID`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+-- 角色权限关联表
+CREATE TABLE sys_role_permission (
+                                     id INT AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
+                                     role_id INT NOT NULL COMMENT '角色ID',
+                                     permission_id INT NOT NULL COMMENT '权限ID',
+                                     create_user VARCHAR(64) NOT NULL COMMENT '创建者',
+                                     create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                                     update_user VARCHAR(64) NOT NULL COMMENT '更新者',
+                                     update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+                                     FOREIGN KEY (role_id) REFERENCES sys_role(id),
+                                     FOREIGN KEY (permission_id) REFERENCES sys_permission(id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- ----------------------------
--- Table structure for UserRoles
--- ----------------------------
-DROP TABLE IF EXISTS `UserRoles`;
-CREATE TABLE `UserRoles` (
-  `UserID` int NOT NULL,
-  `RoleID` int NOT NULL,
-  PRIMARY KEY (`UserID`,`RoleID`),
-  KEY `RoleID` (`RoleID`),
-  CONSTRAINT `UserRoles_ibfk_1` FOREIGN KEY (`UserID`) REFERENCES `Users` (`UserID`),
-  CONSTRAINT `UserRoles_ibfk_2` FOREIGN KEY (`RoleID`) REFERENCES `Roles` (`RoleID`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
--- ----------------------------
--- Table structure for Users
--- ----------------------------
-DROP TABLE IF EXISTS `Users`;
-CREATE TABLE `Users` (
-  `UserID` int NOT NULL AUTO_INCREMENT,
-  `Username` varchar(50) NOT NULL,
-  `PasswordHash` varchar(255) NOT NULL,
-  `Gender` enum('M','F') DEFAULT NULL,
-  `Email` varchar(100) DEFAULT NULL,
-  `IsActive` tinyint(1) NOT NULL DEFAULT '0',
-  `CreatedAt` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `LastLogin` datetime DEFAULT NULL,
-  PRIMARY KEY (`UserID`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/**
+ JSON meta 字段数据 {
+  "style": "菜单样式数据",
+  "icon": "菜单图标数据",
+  "permissions": ["附加权限1", "附加权限2"],
+  "params": {"key1": "value1", "key2": "value2"}
+}
+**/
 
-SET FOREIGN_KEY_CHECKS = 1;
+
+-- 添加外键约束，关联权限ID
+ALTER TABLE sys_menu ADD CONSTRAINT FK_permission_id FOREIGN KEY (permission_id) REFERENCES sys_permission(id);
+
+-- 添加外键约束，关联父菜单ID
+ALTER TABLE sys_menu ADD CONSTRAINT FK_parent_id FOREIGN KEY (parent_id) REFERENCES sys_menu(id);
+
+
+-- 用户角色关联表
+ALTER TABLE sys_user_role ADD INDEX idx_user_id (user_id);
+ALTER TABLE sys_user_role ADD INDEX idx_role_id (role_id);
+
+-- 角色权限关联表
+ALTER TABLE sys_role_permission ADD INDEX idx_role_id (role_id);
+ALTER TABLE sys_role_permission ADD INDEX idx_permission_id (permission_id);
+
+-- 用户表
+ALTER TABLE sys_user ADD INDEX idx_user_name (user_name);
+ALTER TABLE sys_user ADD INDEX idx_mobile (mobile);
+
+-- 权限表
+ALTER TABLE sys_permission ADD INDEX idx_permission_name (permission_name);
+
+
+-- 菜单表
+ALTER TABLE sys_menu ADD INDEX idx_menu_name (menu_name);
+ALTER TABLE sys_menu ADD INDEX idx_parent_id (parent_id);
+ALTER TABLE sys_menu ADD INDEX idx_permission_id (permission_id);
+ALTER TABLE sys_menu ADD INDEX idx_create_user (create_user);

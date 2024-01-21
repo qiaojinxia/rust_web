@@ -1,6 +1,6 @@
 # dev.toml
 [database]
-url = "mysql://root:5GuvROS77DqG@dcs-service-0c87c9406fda:4064/all-in-gpt" # 例如: "postgres://user:password@localhost/myapp"
+url = "mysql://cmdb:SWEmkTd6cnJ32TYd@154.12.95.150:3306/cmdb" # 例如: "postgres://user:password@localhost/myapp"
 init_sql = "init_db.sql"
 max_connections = 100
 min_connections = 5
@@ -13,4 +13,3 @@ sqlx_logging = true
 [server]
 host = "localhost" # 例如: "127.0.0.1"
 port = 8080 # 例如: 8080
-
