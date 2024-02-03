@@ -13,7 +13,7 @@ use crate::schema::admin::sea_orm_active_enums::Gender;
 use crate::services::admin::sys_user_services;
 use actix_web::ResponseError;
 use validator::Validate;
-use actix_web::http::StatusCode;
+
 
 #[post("/register")]
 pub async fn register(

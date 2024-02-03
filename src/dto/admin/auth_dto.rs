@@ -1,7 +1,6 @@
 use validator::{Validate};
 
 use serde::{Deserialize, Serialize};
-use crate::schema::admin::sys_user::Model;
 
 #[derive(Debug, Deserialize, Validate)]
 pub struct RegisterRequestDto {

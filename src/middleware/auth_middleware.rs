@@ -88,7 +88,7 @@ impl<S, B> Service<ServiceRequest> for JWTAuthHiMiddleware<S>
 
             let authorization = authorization.unwrap();
 
-            let token = &authorization[7..]; // 'Bearer ' + token
+            let _token = &authorization[7..]; // 'Bearer ' + token
 
             // let token_data = Ok("".to_string());
             //
