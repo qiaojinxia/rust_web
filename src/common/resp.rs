@@ -4,7 +4,7 @@ use serde_json::json;
 use thiserror::Error;
 use actix_web::http::StatusCode;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct ApiResponse<T> {
     pub code: u16,
     pub message: String,
@@ -23,7 +23,7 @@ impl<T> ApiResponse<T> {
     pub fn success(data: T) -> ApiResponse<T> {
         ApiResponse::new(200, "Success", data)
     }
-
+    #[warn(unused_variables)]
     pub fn status_code(&self) -> StatusCode {
         StatusCode::from_u16(self.code).unwrap_or_else(|_| StatusCode::INTERNAL_SERVER_ERROR)
     }

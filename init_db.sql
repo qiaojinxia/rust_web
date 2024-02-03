@@ -5,7 +5,7 @@ CREATE TABLE sys_user (
                           password VARCHAR(256) NOT NULL COMMENT '密码', -- 密码长度增加以存储hash值
                           email VARCHAR(128) NOT NULL UNIQUE COMMENT '邮箱', -- 增加长度并添加唯一约束
                           gender ENUM('M', 'F', 'O') NOT NULL COMMENT '性别', -- 使用ENUM类型表示性别
-                          mobile VARCHAR(15) NOT NULL UNIQUE COMMENT '手机号码', -- 手机号码长度增加
+                          mobile VARCHAR(15) UNIQUE COMMENT '手机号码', -- 手机号码长度增加
                           avatar VARCHAR(256) COMMENT '头像',
                           create_user VARCHAR(64) NOT NULL COMMENT '创建者',
                           create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',

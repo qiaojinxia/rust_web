@@ -13,3 +13,8 @@ sqlx_logging = true
 [server]
 host = "localhost" # 例如: "127.0.0.1"
 port = 8080 # 例如: 8080
+
+
+[redis]
+host = ''
+port = 6379

@@ -9,18 +9,21 @@ pub async fn create_user(
     db: &DatabaseConnection,
     user_name: Option<String>,
     password: String,
-    email: String,
+    email: Option<String>,
     gender: Gender,
-    mobile: String,
-    // ... 其他必要的字段
+    mobile: Option<String>,
+    create_user: Option<String>,
+    update_user: Option<String>,
 ) -> Result<sys_user::Model, DbErr> {
 
     let user = sys_user::ActiveModel {
         user_name: Set(user_name.unwrap()),
         password: Set(password),
-        email: Set(email),
+        email: Set(email.unwrap()),
         gender: Set(gender),
-        mobile: Set(mobile),
+        mobile: Set(mobile.unwrap()),
+        create_user: Set(create_user.unwrap()),
+        update_user: Set(update_user.unwrap()),
         // ... 设置其他字段
         ..Default::default()
     };
@@ -107,10 +110,17 @@ pub async fn find_user_by_email_or_mobile(
     email: Option<String>,
     mobile: Option<String>,
 ) -> Result<Option<sys_user::Model>, DbErr> {
-
-
     let  query = SysUser::find()
         .filter(sys_user::Column::IsDeleted.eq(0)).filter(sys_user::Column::Email.eq(email)).filter(sys_user::Column::Mobile.eq(mobile));
+    query.one(db).await
+}
 
+//find_user_by_username 根据用户名查找用户
+pub async fn find_user_by_username(
+    db: &DatabaseConnection,
+    user_name: Option<String>,
+) -> Result<Option<sys_user::Model>, DbErr> {
+    let  query = SysUser::find()
+        .filter(sys_user::Column::IsDeleted.eq(0)).filter(sys_user::Column::UserName.eq(user_name));
     query.one(db).await
 }
