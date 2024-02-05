@@ -3,7 +3,7 @@ use validator::{Validate};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Validate)]
-pub struct RegisterRequestDto {
+pub struct UserRegistrationDto {
     #[validate(length(min = 1, max = 255))]
     pub user_name: Option<String>,
     #[validate(length(min = 8, max = 255))]
@@ -19,15 +19,15 @@ pub struct RegisterRequestDto {
 
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct RegisterRespDto {
-    pub(crate) user_name: String,
-    pub(crate) token: String,
+pub struct UserRegistrationRespDto {
+    pub user_name: String,
+    pub token: String,
 }
 
 
 
 #[derive(Debug, Serialize, Deserialize, Validate)]
-pub struct LoginRequestDto {
+pub struct SysLoginDto {
     #[validate(length(min = 1, max = 255))]
     pub user_name: Option<String>,
     #[validate(length(min = 8, max = 255))]
@@ -36,7 +36,7 @@ pub struct LoginRequestDto {
 
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct LoginRespDto {
+pub struct SysLoginRespDto {
     pub user_name: String,
     pub token: String,
 }

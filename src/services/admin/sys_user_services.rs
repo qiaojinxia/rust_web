@@ -21,7 +21,7 @@ pub async fn create_user(
         password: Set(password),
         email: Set(email.unwrap()),
         gender: Set(gender),
-        mobile: Set(mobile.unwrap()),
+        mobile: Set(mobile),
         create_user: Set(create_user.unwrap()),
         update_user: Set(update_user.unwrap()),
         // ... 设置其他字段
@@ -71,10 +71,8 @@ pub async fn update_user(
         user.gender = Set(gen);
     }
     if let Some(mb) = mobile {
-        user.mobile = Set(mb);
+        user.mobile = Set(Some(mb));
     }
-    // ... 更新其他字段
-
     user.update(db).await.map(Some)
 }
 

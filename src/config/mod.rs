@@ -1,3 +1,3 @@
 pub mod loader;
-pub mod structs;
+pub mod cfg;
 pub mod globals;

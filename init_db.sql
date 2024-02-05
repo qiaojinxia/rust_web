@@ -1,7 +1,7 @@
 -- 用户表
 CREATE TABLE sys_user (
                           id INT AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
-                          user_name VARCHAR(64) NOT NULL COMMENT '用户名',
+                          user_name VARCHAR(64) NOT NULL UNIQUE COMMENT '用户名',
                           password VARCHAR(256) NOT NULL COMMENT '密码', -- 密码长度增加以存储hash值
                           email VARCHAR(128) NOT NULL UNIQUE COMMENT '邮箱', -- 增加长度并添加唯一约束
                           gender ENUM('M', 'F', 'O') NOT NULL COMMENT '性别', -- 使用ENUM类型表示性别
@@ -18,9 +18,10 @@ CREATE TABLE sys_user (
 -- 角色表
 CREATE TABLE sys_role (
                           id INT AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
-                          role_id VARCHAR(64) NOT NULL UNIQUE COMMENT '角色ID',
-                          role_name VARCHAR(64) NOT NULL COMMENT '角色名称',
+                          role_code VARCHAR(64) NOT NULL UNIQUE COMMENT '角色code',
+                          role_name VARCHAR(64) NOT NULL UNIQUE COMMENT '角色名称',
                           description VARCHAR(255) COMMENT '描述',
+                          status TINYINT(1) NOT NULL DEFAULT 1 COMMENT '角色状态 0(关)/1(开)）',
                           create_user VARCHAR(64) NOT NULL COMMENT '创建者',
                           create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
                           update_user VARCHAR(64) NOT NULL COMMENT '更新者',
@@ -31,7 +32,7 @@ CREATE TABLE sys_role (
 -- 权限表
 CREATE TABLE sys_permission (
                                 id INT AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
-                                permission_name VARCHAR(64) NOT NULL COMMENT '权限名称',
+                                permission_name VARCHAR(64)  NOT NULL UNIQUE COMMENT '权限名称',
                                 description VARCHAR(255) COMMENT '描述',
                                 create_user VARCHAR(64) NOT NULL COMMENT '创建者',
                                 create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',

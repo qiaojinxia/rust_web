@@ -7,13 +7,13 @@ use crate::schema::admin::prelude::{SysRole};
 pub async fn create_role(
     db: &DatabaseConnection,
     role_name: String,
+    role_id: String,
     description: String,
-    // ... 其他必要的字段
 ) -> Result<sys_role::Model, DbErr> {
     let role = sys_role::ActiveModel {
         role_name: Set(role_name),
         description: Set(Some(description)),
-        // ... 设置其他字段
+        role_code:Set(role_id),
         ..Default::default()
     };
     role.insert(db).await

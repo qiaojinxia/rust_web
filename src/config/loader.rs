@@ -1,8 +1,8 @@
 use std::fs;
 use anyhow::{Result, Context};
-use crate::config::structs;
+use crate::config::cfg;
 
-pub fn with_config(file_path: &str) -> Result<structs::AppConfig> {
+pub fn with_config(file_path: &str) -> Result<cfg::AppConfig> {
     let config_str = fs::read_to_string(file_path)
         .with_context(|| format!("Failed to read config file: {}", file_path))?;
     let config = toml::from_str(&config_str)

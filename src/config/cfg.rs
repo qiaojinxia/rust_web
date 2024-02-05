@@ -1,5 +1,5 @@
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize)]
 pub struct AppConfig {
@@ -7,7 +7,8 @@ pub struct AppConfig {
     pub database: DatabaseConfig,
     ///服务器配置
     pub server: ServerConfig,
-    // 可以添加更多的配置字段
+    ///redis配置
+    pub redis: RedisConfig,
 }
 
 
@@ -44,10 +45,27 @@ pub struct DatabaseConfig {
 
 #[derive(Deserialize)]
 pub struct ServerConfig {
-    // 服务器主机地址
+    /// 服务器主机地址
     pub host: String,
-    
-    // 服务器端口号
+
+    /// 服务器端口号
     pub port: u16,
     
+}
+
+// 定义 Redis 配置结构体
+#[derive(Debug, Deserialize, Serialize)]
+pub struct RedisConfig {
+    /// Redis 服务器的主机地址
+    pub host: String,
+
+    /// Redis 服务器的端口号
+    pub port: u16,
+
+    /// Redis 服务器的密码（可选）
+    pub password: Option<String>,
+
+    /// 默认数据库编号
+    pub db: i32,
+
 }

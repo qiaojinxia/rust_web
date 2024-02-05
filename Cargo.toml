@@ -7,6 +7,7 @@ edition = "2021"
 
 
 [dependencies]
+actix = "0.13.2"
 actix-web = "4.4.1"
 actix-rt = "2.5"  # Use the latest version compatible with your project
 signal-hook = "0.3" # Use the latest version compatible with your project
@@ -29,3 +30,5 @@ validator_derive = "0.16.0"
 futures-util = { version = "0.3.30", features = [] }
 futures = { version = "0.3.30", features = [] }
 actix-service ="2.0"
+actix-redis = "0.13.0"
+redis-async = "0.16.1"

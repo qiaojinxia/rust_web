@@ -7,8 +7,6 @@ use tokio::sync::oneshot;
 use my_gpt::{app, routes, middleware};
 use my_gpt::config::globals;
 use actix_web::middleware::Logger;
-
-
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
     app::init().await;
@@ -24,8 +22,8 @@ async fn main() -> std::io::Result<()> {
     // 创建 HTTP 服务器
     let server = HttpServer::new(|| {
         App::new()
-            .app_data(Data::new( globals::DB_POOL.get()
-            .expect("DB_POOL not initialized").clone())) // 存储应用状态
+            .app_data(Data::new( globals::APP_STATE.get().clone()
+            .expect("DB_POOL not initialized"))) // 存储应用状态
             .configure(routes::admin::auth_routes::api_config)
             .wrap(middleware::auth_middleware::JWTAuth)
             .wrap(Logger::default())
