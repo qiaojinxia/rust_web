@@ -51,14 +51,15 @@ CREATE TABLE sys_menu (
                           parent_id INT DEFAULT NULL COMMENT '父菜单ID',
                           redirect VARCHAR(255) COMMENT '重定向地址',
                           guards TINYINT COMMENT '权限守卫',
+                          type TINYINT COMMENT '菜单类型',
                           component VARCHAR(255) COMMENT '组件路径',
                           meta JSON COMMENT '元数据（包含样式、图标、附加权限、附加参数等）',
-                          hidden TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否隐藏',
                           create_user VARCHAR(64) NOT NULL COMMENT '创建者',
                           create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
                           update_user VARCHAR(64) NOT NULL COMMENT '更新者',
                           update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-                          is_visible TINYINT(1) NOT NULL DEFAULT 1 COMMENT '是否显示',
+                          status TINYINT(1) NOT NULL DEFAULT 0 COMMENT '菜单状态 0(禁用)/1(启用)',
+                          is_hidden TINYINT(1) NOT NULL DEFAULT 1 COMMENT '是否隐藏',
                           is_deleted TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否删除'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 

@@ -20,3 +20,7 @@ host = "" # Redis 服务器的地址
 port = 6379         # Redis 服务器的端口，默认为 6379
 password = ""       # Redis 服务器的密码（如果有设置）
 db = 0              # 默认数据库编号，从 0 开始
+
+[jwt]
+secret = "you-secret"
+expire_time = 604800 #秒

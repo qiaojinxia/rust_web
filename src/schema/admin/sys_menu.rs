@@ -15,14 +15,15 @@ pub struct Model {
     pub parent_id: Option<i32>,
     pub redirect: Option<String>,
     pub guards: Option<i8>,
+    pub r#type: Option<i8>,
     pub component: Option<String>,
     pub meta: Option<Json>,
-    pub hidden: i8,
     pub create_user: String,
     pub create_time: Option<DateTimeUtc>,
     pub update_user: String,
     pub update_time: Option<DateTimeUtc>,
-    pub is_visible: i8,
+    pub status: i8,
+    pub is_hidden: i8,
     pub is_deleted: i8,
 }
 

@@ -9,6 +9,8 @@ pub struct AppConfig {
     pub server: ServerConfig,
     ///redis配置
     pub redis: RedisConfig,
+    ///jwt配置
+    pub jwt: JwtConfig,
 }
 
 
@@ -68,4 +70,11 @@ pub struct RedisConfig {
     /// 默认数据库编号
     pub db: i32,
 
+}
+
+// 定义 Jwt 配置结构体
+#[derive(Debug, Deserialize, Serialize)]
+pub struct JwtConfig {
+    pub secret: String,
+    pub expire_time: u64,
 }
