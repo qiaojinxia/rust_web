@@ -1,3 +1,4 @@
+use std::env;
 use actix::Addr;
 use actix_redis::RedisActor;
 use once_cell::sync::Lazy;
@@ -21,8 +22,11 @@ pub struct AppState {
 }
 
 pub static APP_CONFIG: Lazy<cfg::AppConfig> = Lazy::new(|| {
+    let config_path = env::var("CONFIG_PATH").unwrap_or_else(|_| "config/dev.toml".to_string());
+    info!("Loading config from: {}", config_path);
+    let config = loader::with_config(&config_path).expect("Failed to load config");
     info!("load config success!");
-    loader::with_config("config/dev.toml").unwrap()
+    config
 });
 
 

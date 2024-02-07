@@ -1,21 +1,32 @@
 use sea_orm::{ActiveModelTrait, DatabaseConnection, DbErr, EntityTrait};
 use sea_orm::ActiveValue::Set;
+use crate::dto;
+use crate::dto::admin::role_dto;
 use crate::schema::admin::{sys_role};
 use crate::schema::admin::prelude::{SysRole};
 
 //create_role 创建角色
 pub async fn create_role(
     db: &DatabaseConnection,
-    role_name: String,
-    role_id: String,
-    description: String,
+    create_user: String,
+    role_create_info:role_dto::RoleCreationDto
 ) -> Result<sys_role::Model, DbErr> {
-    let role = sys_role::ActiveModel {
-        role_name: Set(role_name),
-        description: Set(Some(description)),
-        role_code:Set(role_id),
+    let mut role = sys_role::ActiveModel {
         ..Default::default()
     };
+    if let Some(rn) = role_create_info.role_name {
+        role.role_name = Set(rn);
+    }
+    if let Some(dsc) = role_create_info.description {
+        role.description = Set(Some(dsc));
+    }
+    if let Some(code) = role_create_info.role_code {
+        role.role_code = Set(code);
+    }
+    role.status = Set(role_create_info.status);
+
+    role.create_user = Set(create_user);
+
     role.insert(db).await
 }
 
@@ -38,20 +49,22 @@ pub async fn get_role_by_id(
 pub async fn update_role(
     db: &DatabaseConnection,
     role_id: i32,
-    role_name: Option<String>,
-    description: Option<String>,
-    // ... 其他可选字段
+    role_update_info: dto::admin::role_dto::RoleUpdateDto
 ) -> Result<Option<sys_role::Model>, DbErr> {
     let mut role: sys_role::ActiveModel = SysRole::find_by_id(role_id).one(db).await?.unwrap().into();
 
-    if let Some(rn) = role_name {
+    if let Some(rn) = role_update_info.role_name {
         role.role_name = Set(rn);
     }
-    if let Some(dsc) = description {
+    if let Some(dsc) = role_update_info.description {
         role.description = Set(Some(dsc));
     }
-    // ... 更新其他字段
-
+    if let Some(code) = role_update_info.role_code {
+        role.role_code = Set(code);
+    }
+    if let Some(status) = role_update_info.status {
+        role.status = Set(status);
+    }
     role.update(db).await.map(Some)
 }
 

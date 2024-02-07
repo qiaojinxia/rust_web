@@ -57,6 +57,9 @@ pub enum ApiError {
 
     #[error("Custom Error: {0}")]
     CustomError(String),
+
+    #[error("Invalid Argument: {0}")]
+    InvalidArgument(String),
 }
 
 impl ResponseError for ApiError {
@@ -68,6 +71,7 @@ impl ResponseError for ApiError {
             ApiError::Unauthorized(msg) => msg,
             ApiError::NotFound(msg) => msg,
             ApiError::CustomError(msg) => msg,
+            ApiError::InvalidArgument(msg) => msg,
         };
         let error_response = ApiResponse {
             code: status_code.as_u16(),

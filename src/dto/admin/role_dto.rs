@@ -1,16 +1,9 @@
 use serde::{Deserialize, Serialize};
 use validator_derive::Validate;
 
-#[derive(Debug, Serialize, Deserialize, Validate)]
-pub struct RoleCreationDto {
-    #[validate(length(min = 1, max = 16))]
-    pub role_id: Option<String>,
-    #[validate(length(min = 1, max = 64))]
-    pub role_name: Option<String>,
-    pub description: Option<String>,
-    pub status:i8,
-}
-
+/// Role DTO
+/// Method: General
+/// Description: Used for general role information.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct RoleDto {
     pub id: Option<i32>,
@@ -20,14 +13,83 @@ pub struct RoleDto {
     pub status: i8,
 }
 
-// 用于创建操作的响应结构体，复用了BaseRoleResponseDto
+/// Role Creation Request DTO
+/// Method: POST
+/// API: /roles
+/// Description: DTO for creating a role with field validations.
+#[derive(Debug, Serialize, Deserialize, Validate)]
+pub struct RoleCreationDto {
+    #[validate(length(min = 1, max = 16))]
+    pub role_id: Option<String>,
+    #[validate(length(min = 1, max = 16))]
+    pub role_code: Option<String>,
+    #[validate(length(min = 1, max = 64))]
+    pub role_name: Option<String>,
+    #[validate(length(min = 1, max = 512))]
+    pub description: Option<String>,
+    pub status: i8,
+}
+
+/// Role Creation Response DTO
+/// Method: POST
+/// API: /roles
+/// Description: DTO for the response after creating a role.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct RoleCreationResponseDto {
     #[serde(flatten)]
     pub base: RoleDto,
 }
 
+/// Roles List Response DTO
+/// Method: GET
+/// API: /roles
+/// Description: DTO for the response containing a list of roles.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct RolesResponseDto {
-    pub list: Vec<RoleDto>, // 使用 RoleDto 而不是特定于创建操作的 DTO
+    pub list: Vec<RoleDto>,
+}
+
+/// Single Role Response DTO
+/// Method: GET
+/// API: /roles/{id}
+/// Description: DTO for the response containing information of a single role.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RoleResponseDto {
+    #[serde(flatten)]
+    pub role: Option<RoleDto>,
+}
+
+/// Role Update Request DTO
+/// Method: PUT
+/// API: /roles/{id}
+/// Description: DTO for updating role information with field validations.
+#[derive(Debug, Serialize, Deserialize, Validate)]
+pub struct RoleUpdateDto {
+    #[validate(length(min = 1, max = 16))]
+    pub role_code: Option<String>,
+    #[validate(length(min = 1, max = 64))]
+    pub role_name: Option<String>,
+    #[validate(length(min = 1, max = 512))]
+    pub description: Option<String>,
+    pub status: Option<i8>,
+}
+
+/// Role Update Response DTO
+/// Method: PUT
+/// API: /roles/{id}
+/// Description: DTO for the response after updating role information.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RoleUpdateRespDto {
+    #[serde(flatten)]
+    pub role: Option<RoleDto>,
+}
+
+/// Role Deletion Response DTO
+/// Method: DELETE
+/// API: /roles/{id}
+/// Description: DTO for the response after deleting a role.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RoleDeleteRespDto {
+    #[serde(flatten)]
+    pub role_id: Option<i8>,
 }

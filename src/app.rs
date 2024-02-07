@@ -9,7 +9,7 @@ use actix_redis::{Error, RedisActor};
 use log::{error, info};
 
 use sea_orm::{DatabaseConnection, DbErr};
-use crate::config::cfg::{AppConfig, DatabaseConfig, RedisConfig};
+use crate::config::cfg::{DatabaseConfig, RedisConfig};
 
 // 一个初始化数据库连接的函数
 pub async fn conn_db(db_cfg: &DatabaseConfig) -> Result<Arc<DatabaseConnection>, DbErr> {
