@@ -16,7 +16,7 @@ pub struct Model {
     pub status: i8,
     pub create_user: String,
     pub create_time: Option<DateTimeUtc>,
-    pub update_user: String,
+    pub update_user: Option<String>,
     pub update_time: Option<DateTimeUtc>,
 }
 

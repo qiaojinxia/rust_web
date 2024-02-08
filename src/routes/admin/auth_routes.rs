@@ -82,10 +82,8 @@ async fn health_checker_handler() -> impl Responder {
 
 
 pub fn api_config(cfg: &mut web::ServiceConfig) {
-    cfg.service(
-        web::scope("/api")
-            .service(login)
-            .service(register)
-            .service(health_checker_handler)
-    );
+    cfg
+        .service(login)
+        .service(register)
+        .service(health_checker_handler);
 }

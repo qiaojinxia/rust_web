@@ -133,7 +133,7 @@ pub async fn delete_role(
     let role_id = path.into_inner();
     let result:Result<Option<RoleDeleteRespDto>,ApiError>;
     match sys_role_services::delete_role(&*app_state.mysql_conn, role_id).await {
-        Ok(rows) if rows > 0 => { result = Ok(None);},
+        Ok(rows) if rows > 0 => { result = Ok(Some(RoleDeleteRespDto { role_id: Some(role_id as i8) }));},
         Ok(_) => { result = Err(ApiError::NotFound("Role not found".to_string())); },
         Err(error) => { result = Err(ApiError::InternalServerError(error.to_string())); },
     }
@@ -141,12 +141,10 @@ pub async fn delete_role(
 }
 
 pub fn api_config(cfg: &mut web::ServiceConfig) {
-    cfg.service(
-        web::scope("/api")
-            .service(create_role)
-            .service(get_roles)
-            .service(get_role_by_id)
-            .service(update_role)
-            .service(delete_role)
-    );
+    cfg
+        .service(create_role)
+        .service(get_roles)
+        .service(get_role_by_id)
+        .service(update_role)
+        .service(delete_role);
 }

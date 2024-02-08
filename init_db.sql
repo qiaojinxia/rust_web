@@ -24,8 +24,8 @@ CREATE TABLE sys_role (
                           status TINYINT(1) NOT NULL DEFAULT 1 COMMENT '角色状态 0(关)/1(开)）',
                           create_user VARCHAR(64) NOT NULL COMMENT '创建者',
                           create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-                          update_user VARCHAR(64) NOT NULL COMMENT '更新者',
-                          update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+                          update_user VARCHAR(64) COMMENT '更新者',
+                          update_time TIMESTAMP DEFAULT  ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 

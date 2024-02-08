@@ -1,4 +1,4 @@
-use actix_web::{web::Data, App, HttpServer};
+use actix_web::{web::Data, App, HttpServer, web};
 use std::sync::mpsc;
 use std::thread;
 use signal_hook::consts::signal::{SIGINT, SIGTERM};
@@ -7,6 +7,8 @@ use tokio::sync::oneshot;
 use my_gpt::{app, routes, middleware};
 use my_gpt::config::globals;
 use actix_web::middleware::Logger;
+use my_gpt::config::globals::AppState;
+
 #[actix_rt::main]
 async fn main() -> std::io::Result<()> {
     app::init().await;
@@ -18,14 +20,21 @@ async fn main() -> std::io::Result<()> {
             tx.send(sig).unwrap();
         }
     });
+    let m = globals::APP_STATE.get().unwrap();
 
     // 创建 HTTP 服务器
     let server = HttpServer::new(|| {
         App::new()
-            .app_data(Data::new( globals::APP_STATE.get().clone()
-            .expect("DB_POOL not initialized"))) // 存储应用状态
-            .configure(routes::admin::auth_routes::api_config)
-            .wrap(middleware::auth_middleware::JWTAuth)
+            .app_data(Data::new(AppState{
+                redis_conn:  m.redis_conn.clone(),
+                mysql_conn: m.mysql_conn.clone(),
+            })) // 存储应用状态
+            .service(
+                web::scope("/api")
+                    .configure(routes::admin::auth_routes::api_config) // auth相关配置
+                    .configure(routes::admin::role_routes::api_config) // role相关配置
+            )
+            // .wrap(middleware::auth_middleware::JWTAuth)
             .wrap(Logger::default())
             .wrap(Logger::new("%a %D ms %{User-Agent}i"))
             
