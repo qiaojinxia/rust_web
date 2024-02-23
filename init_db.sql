@@ -21,11 +21,11 @@ CREATE TABLE sys_role (
                           role_code VARCHAR(64) NOT NULL UNIQUE COMMENT '角色code',
                           role_name VARCHAR(64) NOT NULL UNIQUE COMMENT '角色名称',
                           description VARCHAR(255) COMMENT '描述',
-                          status TINYINT(1) NOT NULL DEFAULT 1 COMMENT '角色状态 0(关)/1(开)）',
+                          status TINYINT(1) NOT NULL DEFAULT 1 COMMENT '角色状态 0(关)/1(开)',
                           create_user VARCHAR(64) NOT NULL COMMENT '创建者',
                           create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
                           update_user VARCHAR(64) COMMENT '更新者',
-                          update_time TIMESTAMP DEFAULT  ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+                          update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
@@ -46,7 +46,8 @@ CREATE TABLE sys_menu (
                           id INT AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
                           menu_name VARCHAR(64) NOT NULL COMMENT '菜单名称',
                           permission_id INT COMMENT '关联的权限ID',
-                          url VARCHAR(255) NOT NULL COMMENT '菜单URL',
+                          route VARCHAR(255) NOT NULL COMMENT '路由路径',
+                          route_name VARCHAR(255) NOT NULL COMMENT '路由名称',
                           sort TINYINT DEFAULT NULL COMMENT '菜单排序',
                           parent_id INT DEFAULT NULL COMMENT '父菜单ID',
                           redirect VARCHAR(255) COMMENT '重定向地址',
@@ -56,7 +57,7 @@ CREATE TABLE sys_menu (
                           meta JSON COMMENT '元数据（包含样式、图标、附加权限、附加参数等）',
                           create_user VARCHAR(64) NOT NULL COMMENT '创建者',
                           create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-                          update_user VARCHAR(64) NOT NULL COMMENT '更新者',
+                          update_user VARCHAR(64)  COMMENT '更新者',
                           update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
                           status TINYINT(1) NOT NULL DEFAULT 0 COMMENT '菜单状态 0(禁用)/1(启用)',
                           is_hidden TINYINT(1) NOT NULL DEFAULT 1 COMMENT '是否隐藏',

@@ -42,7 +42,6 @@ pub async fn create_role(
     create_response!(result)
 }
 
-
 // 获取角色列表
 #[get("/roles")]
 pub async fn get_roles(

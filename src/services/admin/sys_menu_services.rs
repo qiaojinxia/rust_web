@@ -1,27 +1,33 @@
+use chrono::Utc;
 use sea_orm::{ActiveModelTrait, DatabaseConnection, DbErr, EntityTrait};
 use sea_orm::ActiveValue::Set;
+use serde_json::json;
+use crate::dto::admin::sys_menu_dto::{MenuCreationDto, MenuUpdateDto};
 use crate::schema::admin::{sys_menu};
 use crate::schema::admin::prelude::{SysMenu};
 
 //create_menu 创建菜单
 pub async fn create_menu(
     db: &DatabaseConnection,
-    menu_name: String,
-    permission_id: i32,
-    url: String,
-    sort: i8,
-    parent_id: Option<i32>,
-    // ... 其他必要的字段
+    menu_crate_req:MenuCreationDto,
+    create_user:String,
 ) -> Result<sys_menu::Model, DbErr> {
-    let menu = sys_menu::ActiveModel {
-        menu_name: Set(menu_name),
-        permission_id: Set(Some(permission_id)),
-        url: Set(url),
-        sort: Set(Some(sort)),
-        parent_id: Set(parent_id),
-        // ... 设置其他字段
+    let mut menu = sys_menu::ActiveModel {
+        menu_name: Set(menu_crate_req.base.name.unwrap()),
+        permission_id: Set(Some(menu_crate_req.base.permission_id)),
+        route: Set(menu_crate_req.base.route.unwrap()),
+        meta: Set(Some(json!({"icon": ""}))),
+        sort: Set(Some(menu_crate_req.base.sort)),
+        parent_id: Set(menu_crate_req.base.parent_id),
+        create_user:Set(create_user),
+        status: Set(menu_crate_req.base.status),
+        is_hidden: Set(menu_crate_req.base.is_hidden),
+        create_time: Set(Some(Utc::now())),
         ..Default::default()
     };
+    // if let icon = Some(menu_crate_req.base.icon){
+    //     menu.meta = Set(Some(json!({"icon":icon})))
+    // }
     menu.insert(db).await
 }
 
@@ -43,29 +49,29 @@ pub async fn get_menu_by_id(
 //update_menu 更新菜单
 pub async fn update_menu(
     db: &DatabaseConnection,
-    menu_id: i32,
-    menu_name: Option<String>,
-    permission_id: Option<i32>,
-    url: Option<String>,
-    sort: Option<i8>,
-    parent_id: Option<i32>,
+    menu_update_req:MenuUpdateDto,
     // ... 其他可选字段
 ) -> Result<Option<sys_menu::Model>, DbErr> {
+
+    let menu_id = menu_update_req.base.id;
+
     let mut menu: sys_menu::ActiveModel = SysMenu::find_by_id(menu_id).one(db).await?.unwrap().into();
 
-    if let Some(mn) = menu_name {
+    if let Some(mn) = menu_update_req.base.name {
         menu.menu_name = Set(mn);
     }
-    if let Some(pid) = permission_id {
-        menu.permission_id = Set(Some(pid));
-    }
-    if let Some(u) = url {
-        menu.url = Set(u);
-    }
-    if let Some(s) = sort {
-        menu.sort = Set(Some(s));
-    }
-    if let Some(pid) = parent_id {
+
+    menu.permission_id = Set(Some(menu_update_req.base.permission_id));
+
+
+    menu.route = Set(menu_update_req.base.route.unwrap());
+
+    menu.sort = Set(Some(menu_update_req.base.sort));
+
+    menu.r#type = Set(Some(menu_update_req.base.menu_type));
+
+
+    if let Some(pid) = menu_update_req.base.parent_id {
         menu.parent_id = Set(Some(pid));
     }
     menu.update(db).await.map(Some)

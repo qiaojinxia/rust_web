@@ -1,13 +1,26 @@
-# prod.toml
-# 数据库连接：指向生产数据库。
-# 日志级别：通常设置为较低以减少日志文件大小。
-# API密钥和凭证：生产环境专用的密钥。
-
+# dev.toml
 [database]
-url = "postgres://user:password@prod-db-server/myapp_prod"
+url = "mysql://cmdb:SWEmkTd6cnJ32TYd@154.12.95.150:3306/cmdb" # 例如: "postgres://user:password@localhost/myapp"
+init_sql = "init_db.sql"
+max_connections = 100
+min_connections = 5
+connect_timeout = 10
+acquire_timeout = 8
+idle_timeout = 8
+max_lifetime = 8
+sqlx_logging = true
 
-[logging]
-level = "error"
+[server]
+host = "localhost" # 例如: "127.0.0.1"
+port = 8080 # 例如: 8080
 
-[external_api]
-api_key = "prod-key-5678"
+# Redis 配置段
+[redis]
+host = "154.12.95.150" # Redis 服务器的地址
+port = 6379         # Redis 服务器的端口，默认为 6379
+password = "Caomao123321"       # Redis 服务器的密码（如果有设置）
+db = 0              # 默认数据库编号，从 0 开始
+
+[jwt]
+secret = "you-secret"
+expire_time = 604800 #秒

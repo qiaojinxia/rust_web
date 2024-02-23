@@ -1,118 +1,108 @@
-// use actix_web::{web, HttpResponse, ResponseError, Responder};
-// use std::sync::Arc;
-// use sea_orm::DatabaseConnection;
-// use serde::Deserialize;
-// use crate::services::admin::sys_menu;
-// use crate::common::{ApiError, ApiResponse};
-// use crate::create_response;
-// use validator::{Validate, ValidationError};
-//
-// async fn create_menu_item(
-//     db: web::Data<Arc<DatabaseConnection>>,
-//     form: web::Form<CreateMenuItemRequest>,
-// ) -> impl Responder {
-//     let result = sys_menu::create_menu_item(
-//         &*db,
-//         form.menu_name.clone(),
-//         form.permission_id,
-//         form.url.clone(),
-//         form.sort,
-//         form.style.clone(),
-//         form.parent_id,
-//     )
-//         .await
-//         .map_err(|_| ApiError::InternalServerError("Failed to create menu item".to_string()));
-//
-//     create_response!(result)
-// }
-//
-//
-// // 更新菜单项
-// async fn update_menu_item(
-//     db: web::Data<Arc<DatabaseConnection>>,
-//     form: web::Form<UpdateMenuItemRequest>, // 假设已定义UpdateMenuItemRequest
-// ) -> impl Responder {
-//     let result = sys_menu::update_menu_item(
-//         &*db,
-//         form.id,
-//         form.menu_name.clone(),
-//         form.permission_id,
-//         form.url.clone(),
-//         form.sort,
-//         form.style.clone(),
-//         form.parent_id,
-//     )
-//         .await
-//         .map_err(|_| ApiError::InternalServerError("Failed to update menu item".to_string()));
-//
-//     create_response!(result)
-// }
-//
-// // 删除菜单项
-// async fn delete_menu_item(
-//     db: web::Data<Arc<DatabaseConnection>>,
-//     menu_id: web::Path<i32>,
-// ) -> impl Responder {
-//     let result = sys_menu::delete_menu_item(
-//         &*db,
-//         *menu_id,
-//     )
-//         .await
-//         .map_err(|_| ApiError::InternalServerError("Failed to delete menu item".to_string()));
-//
-//     create_response!(result)
-// }
-//
-// // 获取菜单项详情
-// async fn get_menu_item_by_id(
-//     db: web::Data<Arc<DatabaseConnection>>,
-//     menu_id: web::Path<i32>,
-// ) -> impl Responder {
-//     let result = sys_menu::get_menu_item_by_id(
-//         &*db,
-//         *menu_id,
-//     )
-//         .await
-//         .map_err(|_| ApiError::InternalServerError("Failed to get menu item details".to_string()));
-//
-//     create_response!(result)
-// }
-//
-// // 获取菜单列表
-// async fn get_menu_items(
-//     db: web::Data<Arc<DatabaseConnection>>,
-// ) -> impl Responder {
-//     let result = sys_menu::get_menu_items(&*db)
-//         .await
-//         .map_err(|_| ApiError::InternalServerError("Failed to get menu items".to_string()));
-//
-//     create_response!(result)
-// }
-//
-// // 获取菜单项关联的权限
-// async fn get_permission_of_menu_item(
-//     db: web::Data<Arc<DatabaseConnection>>,
-//     menu_id: web::Path<i32>,
-// ) -> impl Responder {
-//     let result = sys_menu::get_permission_of_menu_item(
-//         &*db,
-//         *menu_id,
-//     )
-//         .await
-//         .map_err(|_| ApiError::InternalServerError("Failed to get permissions of menu item".to_string()));
-//
-//     create_response!(result)
-// }
-//
-// // 将此函数添加到您的API配置中
-// pub fn api_config(cfg: &mut web::ServiceConfig) {
-//     cfg.service(
-//         web::scope("/api/menu")
-//             .route("/create", web::post().to(create_menu_item))
-//             .route("/update", web::put().to(update_menu_item))
-//             .route("/delete/{menu_id}", web::delete().to(delete_menu_item))
-//             .route("/{menu_id}", web::get().to(get_menu_item_by_id))
-//             .route("/list", web::get().to(get_menu_items))
-//             .route("/permissions/{menu_id}", web::get().to(get_permission_of_menu_item)),
-//     );
-// }
+use actix_web::{delete, get, put, post, web, HttpResponse, Responder};
+use validator::Validate;
+use crate::services::admin::sys_menu_services; // 假设您已经有一个处理数据库逻辑的服务层
+use crate::common::resp::{ApiResponse, ApiError};
+use crate::config::globals;
+use crate::create_response;
+use actix_web::ResponseError;
+// 假设您已经定义了一个宏来简化响应的创建
+use crate::dto::admin::sys_menu_dto::{MenuCreationDto, MenuUpdateDto, MenuDto,
+                                      MenusResponseDto, MenuCreationResponseDto,
+                                      MenuUpdateResponseDto, MenuDeleteResponseDto,
+                                      MenuBaseDto};
+
+
+#[post("/menus")]
+pub async fn create_menu(
+    app_state: web::Data<globals::AppState>,
+    menu_creation_dto: web::Json<MenuCreationDto>,
+) -> impl Responder {
+    if let Err(errors) = menu_creation_dto.validate() {
+        return create_response!(Err::<MenuCreationResponseDto, ApiError>(ApiError::InvalidArgument(errors.to_string())));
+    }
+    let result = sys_menu_services::create_menu(
+        &*app_state.mysql_conn,
+        menu_creation_dto.into_inner(),  "admin".to_string())
+        .await
+        .map(|menu| MenuCreationResponseDto {
+            base: MenuBaseDto::from(menu)
+        })
+        .map_err(|error| ApiError::BadRequest(error.to_string()));
+    create_response!(result)
+}
+
+#[get("/menus")]
+pub async fn get_menus(
+    app_state: web::Data<globals::AppState>,
+) -> impl Responder {
+    let result = sys_menu_services::get_menus(&*app_state.mysql_conn).await
+        .map(|menus| MenusResponseDto {
+            list: menus.into_iter().map(|menu| MenuDto {
+                base: MenuBaseDto::from(menu)
+            }).collect(),
+        })
+        .map_err(|error| ApiError::InternalServerError(error.to_string()));
+
+    create_response!(result)
+}
+
+#[get("/menus/{id}")]
+pub async fn get_menu_by_id(
+    app_state: web::Data<globals::AppState>,
+    path: web::Path<i32>,
+) -> impl Responder {
+    let menu_id = path.into_inner();
+    let result = sys_menu_services::get_menu_by_id(&*app_state.mysql_conn, menu_id).await
+        .map(|menu| MenuDto {
+            base: MenuBaseDto::from(menu.unwrap())
+        })
+        .map_err(|error| ApiError::NotFound(error.to_string()));
+
+    create_response!(result)
+}
+
+#[put("/menus/{id}")]
+pub async fn update_menu(
+    app_state: web::Data<globals::AppState>,
+    path: web::Path<i32>,
+    menu_update_dto: web::Json<MenuUpdateDto>,
+) -> impl Responder {
+    let menu_id = path.into_inner();
+    if let Err(errors) = menu_update_dto.validate() {
+        return create_response!(Err::<MenuUpdateResponseDto, ApiError>(ApiError::InvalidArgument(errors.to_string())));
+    }
+
+    let result = sys_menu_services::update_menu(
+        &*app_state.mysql_conn,
+        menu_update_dto.into_inner(),
+    )
+        .await
+        .map(|menu| MenuUpdateResponseDto {
+            base: MenuBaseDto::from(menu.unwrap())
+        })
+        .map_err(|error| ApiError::InternalServerError(error.to_string()));
+
+    create_response!(result)
+}
+
+#[delete("/menus/{id}")]
+pub async fn delete_menu(
+    app_state: web::Data<globals::AppState>,
+    path: web::Path<i32>,
+) -> impl Responder {
+    let menu_id = path.into_inner();
+    let result = sys_menu_services::delete_menu(&*app_state.mysql_conn, menu_id).await
+        .map(|success| MenuDeleteResponseDto { success:success != 0 })
+        .map_err(|error| ApiError::InternalServerError(error.to_string()));
+
+    create_response!(result)
+}
+
+pub fn menu_api_config(cfg: &mut web::ServiceConfig) {
+    cfg
+        .service(create_menu)
+        .service(get_menus)
+        .service(get_menu_by_id)
+        .service(update_menu)
+        .service(delete_menu);
+}
