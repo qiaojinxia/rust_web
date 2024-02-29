@@ -4,7 +4,7 @@ use std::thread;
 use signal_hook::consts::signal::{SIGINT, SIGTERM};
 use signal_hook::iterator::Signals;
 use tokio::sync::oneshot;
-use my_gpt::{app, routes, middleware};
+use my_gpt::{app, routes};
 use my_gpt::config::globals;
 use actix_web::middleware::Logger;
 use my_gpt::config::globals::AppState;

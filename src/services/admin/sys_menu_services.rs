@@ -1,10 +1,13 @@
 use chrono::Utc;
 use sea_orm::{ActiveModelTrait, DatabaseConnection, DbErr, EntityTrait};
 use sea_orm::ActiveValue::Set;
+use sea_orm::prelude::Expr;
 use serde_json::json;
 use crate::dto::admin::sys_menu_dto::{MenuCreationDto, MenuUpdateDto};
 use crate::schema::admin::{sys_menu};
 use crate::schema::admin::prelude::{SysMenu};
+use sea_orm::QueryFilter;
+use sea_orm::ColumnTrait;
 
 //create_menu 创建菜单
 pub async fn create_menu(
@@ -14,10 +17,9 @@ pub async fn create_menu(
 ) -> Result<sys_menu::Model, DbErr> {
     let mut menu = sys_menu::ActiveModel {
         menu_name: Set(menu_crate_req.base.name.unwrap()),
-        permission_id: Set(Some(menu_crate_req.base.permission_id)),
         route: Set(menu_crate_req.base.route.unwrap()),
-        meta: Set(Some(json!({"icon": ""}))),
-        sort: Set(Some(menu_crate_req.base.sort)),
+        route_name:Set(menu_crate_req.base.route_name.unwrap()),
+        sort: Set(Some(menu_crate_req.base.order)),
         parent_id: Set(menu_crate_req.base.parent_id),
         create_user:Set(create_user),
         status: Set(menu_crate_req.base.status),
@@ -25,9 +27,21 @@ pub async fn create_menu(
         create_time: Set(Some(Utc::now())),
         ..Default::default()
     };
-    // if let icon = Some(menu_crate_req.base.icon){
-    //     menu.meta = Set(Some(json!({"icon":icon})))
-    // }
+
+    let mut meta = json!({"icon_type":menu_crate_req.base.icon_type});
+
+    if let Some(v) = menu_crate_req.base.icon{
+        if let Some(obj) = meta.as_object_mut() {
+            // 使用insert方法添加新的键值对
+            obj.insert("icon".to_string(), json!(v));
+        }
+    }
+
+    if let Some(pid) = menu_crate_req.base.parent_id{
+        menu.parent_id = Set(Some(pid));
+    }
+    menu.meta = Set(Some(meta));
+
     menu.insert(db).await
 }
 
@@ -49,11 +63,10 @@ pub async fn get_menu_by_id(
 //update_menu 更新菜单
 pub async fn update_menu(
     db: &DatabaseConnection,
+    menu_id:i32,
     menu_update_req:MenuUpdateDto,
-    // ... 其他可选字段
-) -> Result<Option<sys_menu::Model>, DbErr> {
 
-    let menu_id = menu_update_req.base.id;
+) -> Result<Option<sys_menu::Model>, DbErr> {
 
     let mut menu: sys_menu::ActiveModel = SysMenu::find_by_id(menu_id).one(db).await?.unwrap().into();
 
@@ -61,19 +74,17 @@ pub async fn update_menu(
         menu.menu_name = Set(mn);
     }
 
-    menu.permission_id = Set(Some(menu_update_req.base.permission_id));
-
-
+    if let Some(perm_id) = menu_update_req.base.permission_id {
+        menu.permission_id = Set(Some(perm_id));
+    }
     menu.route = Set(menu_update_req.base.route.unwrap());
-
-    menu.sort = Set(Some(menu_update_req.base.sort));
-
+    menu.sort = Set(Some(menu_update_req.base.order));
     menu.r#type = Set(Some(menu_update_req.base.menu_type));
-
 
     if let Some(pid) = menu_update_req.base.parent_id {
         menu.parent_id = Set(Some(pid));
     }
+
     menu.update(db).await.map(Some)
 }
 
@@ -82,6 +93,15 @@ pub async fn delete_menu(
     db: &DatabaseConnection,
     menu_id: i32,
 ) -> Result<u64, DbErr> {
+    // 首先，尝试更新所有引用该菜单ID作为parent_id的子菜单，
+    // 将它们的parent_id设置为NULL（或者您可以选择删除这些子菜单）
+    let _ = SysMenu::update_many()
+        .col_expr(sys_menu::Column::ParentId, Expr::value(None::<i32>))
+        .filter(sys_menu::Column::ParentId.eq(menu_id))
+        .exec(db)
+        .await?;
+
+    // 然后，尝试删除目标菜单项
     let menu = sys_menu::ActiveModel {
         id: Set(menu_id),
         ..Default::default()

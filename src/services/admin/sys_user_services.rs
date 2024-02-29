@@ -91,8 +91,6 @@ pub async fn delete_user(
         .map(|res| res.rows_affected)
 }
 
-
-
 //get_user_by_id_pure 根据用户ID获取用户信息
 pub async fn get_user_by_id_pure(
     db: &DatabaseConnection,

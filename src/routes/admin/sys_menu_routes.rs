@@ -10,8 +10,6 @@ use crate::dto::admin::sys_menu_dto::{MenuCreationDto, MenuUpdateDto, MenuDto,
                                       MenusResponseDto, MenuCreationResponseDto,
                                       MenuUpdateResponseDto, MenuDeleteResponseDto,
                                       MenuBaseDto};
-
-
 #[post("/menus")]
 pub async fn create_menu(
     app_state: web::Data<globals::AppState>,
@@ -22,12 +20,13 @@ pub async fn create_menu(
     }
     let result = sys_menu_services::create_menu(
         &*app_state.mysql_conn,
-        menu_creation_dto.into_inner(),  "admin".to_string())
+        menu_creation_dto.into_inner(), "admin".to_string())
         .await
         .map(|menu| MenuCreationResponseDto {
             base: MenuBaseDto::from(menu)
         })
-        .map_err(|error| ApiError::BadRequest(error.to_string()));
+        .map_err(|error| ApiError::InternalServerError(error.to_string()));
+
     create_response!(result)
 }
 
@@ -74,6 +73,7 @@ pub async fn update_menu(
 
     let result = sys_menu_services::update_menu(
         &*app_state.mysql_conn,
+        menu_id,
         menu_update_dto.into_inner(),
     )
         .await
@@ -98,7 +98,7 @@ pub async fn delete_menu(
     create_response!(result)
 }
 
-pub fn menu_api_config(cfg: &mut web::ServiceConfig) {
+pub fn api_config(cfg: &mut web::ServiceConfig) {
     cfg
         .service(create_menu)
         .service(get_menus)
