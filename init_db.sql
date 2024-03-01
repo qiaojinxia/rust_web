@@ -32,11 +32,11 @@ CREATE TABLE sys_role (
 -- 权限表
 CREATE TABLE sys_permission (
                                 id INT AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
-                                permission_name VARCHAR(64)  NOT NULL UNIQUE COMMENT '权限名称',
+                                permission_code VARCHAR(64)  NOT NULL UNIQUE COMMENT '权限名称',
                                 description VARCHAR(255) COMMENT '描述',
                                 create_user VARCHAR(64) NOT NULL COMMENT '创建者',
                                 create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-                                update_user VARCHAR(64) NOT NULL COMMENT '更新者',
+                                update_user VARCHAR(64) COMMENT '更新者',
                                 update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -122,7 +122,7 @@ ALTER TABLE sys_user ADD INDEX idx_user_name (user_name);
 ALTER TABLE sys_user ADD INDEX idx_mobile (mobile);
 
 -- 权限表
-ALTER TABLE sys_permission ADD INDEX idx_permission_name (permission_name);
+ALTER TABLE sys_permission ADD INDEX idx_permission_code (permission_code);
 
 
 -- 菜单表

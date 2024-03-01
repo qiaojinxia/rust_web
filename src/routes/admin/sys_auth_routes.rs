@@ -1,6 +1,6 @@
 use actix_web::{get, post, Responder, web};
 use sea_orm::{DbErr};
-use crate::dto::admin::auth_dto;
+use crate::dto::admin::sys_auth_dto;
 use crate::common::auth;
 use crate::common::auth::crypto::verify_password;
 use crate::common::auth::jwt::generate_jwt;
@@ -17,9 +17,9 @@ use config::globals;
 #[post("/register")]
 pub async fn register(
     app_state: web::Data<globals::AppState>,
-    user_register_dto: web::Json<auth_dto::UserRegistrationDto>
+    user_register_dto: web::Json<sys_auth_dto::UserRegistrationDto>
 ) -> impl Responder {
-    let rs: Result<auth_dto::UserRegistrationRespDto, ApiError>;
+    let rs: Result<sys_auth_dto::UserRegistrationRespDto, ApiError>;
     match user_register_dto.0.validate() {
         Ok(_) => {
             // 散列密码
@@ -31,7 +31,7 @@ pub async fn register(
             // 生成JWT
             let token = generate_jwt(&user.user_name, "user").unwrap(); // 假设这是一个外部函数，用于生成JWT
             // 创建并返回AuthResponse
-            rs = Ok(auth_dto::UserRegistrationRespDto { token, user_name:user.user_name });
+            rs = Ok(sys_auth_dto::UserRegistrationRespDto { token, user_name:user.user_name });
         },
         Err(errors) => {
             rs = Err(ApiError::BadRequest(errors.to_string()))
@@ -45,9 +45,9 @@ pub async fn register(
 #[post("/login")]
 pub async fn login(
     app_state: web::Data<globals::AppState>,
-    sys_login_dto: web::Json<auth_dto::SysLoginDto>
+    sys_login_dto: web::Json<sys_auth_dto::SysLoginDto>
 ) -> impl Responder {
-    let rs: Result<auth_dto::SysLoginRespDto, ApiError>;
+    let rs: Result<sys_auth_dto::SysLoginRespDto, ApiError>;
     match sys_login_dto.0.validate() {
         Ok(_) => {
             // 查找用户
@@ -59,7 +59,7 @@ pub async fn login(
                 // 生成JWT
                 let token = generate_jwt(&user.user_name, "user").unwrap(); // 假设这是一个外部函数，用于生成JWT
 
-                rs = Ok(auth_dto::SysLoginRespDto { user_name: user.user_name, token });
+                rs = Ok(sys_auth_dto::SysLoginRespDto { user_name: user.user_name, token });
             }else{
                 rs = Err(ApiError::InternalServerError("Invalid username or password".to_string()));
             }

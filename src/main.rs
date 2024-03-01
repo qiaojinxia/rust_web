@@ -31,8 +31,10 @@ async fn main() -> std::io::Result<()> {
             })) // 存储应用状态
             .service(
                 web::scope("/api")
-                    .configure(routes::admin::auth_routes::api_config) // auth相关配置
-                    .configure(routes::admin::role_routes::api_config) // role相关配置
+                    .configure(routes::admin::sys_auth_routes::api_config) // auth相关配置
+                    .configure(routes::admin::sys_role_routes::api_config) // role相关配置
+                    .configure(routes::admin::sys_menu_routes::api_config) // role相关配置
+                    .configure(routes::admin::sys_permission_routes::api_config) // role相关配置
             )
             // .wrap(middleware::auth_middleware::JWTAuth)
             .wrap(Logger::default())

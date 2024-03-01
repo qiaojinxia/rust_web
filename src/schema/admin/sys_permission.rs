@@ -9,11 +9,11 @@ pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
     #[sea_orm(unique)]
-    pub permission_name: String,
+    pub permission_code: String,
     pub description: Option<String>,
     pub create_user: String,
     pub create_time: Option<DateTimeUtc>,
-    pub update_user: String,
+    pub update_user: Option<String>,
     pub update_time: Option<DateTimeUtc>,
 }
 
