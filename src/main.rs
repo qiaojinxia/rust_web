@@ -35,6 +35,7 @@ async fn main() -> std::io::Result<()> {
                     .configure(routes::admin::sys_role_routes::api_config) // role相关配置
                     .configure(routes::admin::sys_menu_routes::api_config) // role相关配置
                     .configure(routes::admin::sys_permission_routes::api_config) // role相关配置
+                    .configure(routes::admin::sys_user_role_routes::api_config) // role_user相关配置
             )
             // .wrap(middleware::auth_middleware::JWTAuth)
             .wrap(Logger::default())

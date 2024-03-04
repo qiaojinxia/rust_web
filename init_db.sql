@@ -9,7 +9,7 @@ CREATE TABLE sys_user (
                           avatar VARCHAR(256) COMMENT '头像',
                           create_user VARCHAR(64) NOT NULL COMMENT '创建者',
                           create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-                          update_user VARCHAR(64) NOT NULL COMMENT '更新者',
+                          update_user VARCHAR(64)  COMMENT '更新者',
                           update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
                           last_login TIMESTAMP COMMENT '上次登录时间',
                           is_deleted TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否删除'
@@ -72,7 +72,7 @@ CREATE TABLE sys_user_role (
                                role_id INT NOT NULL COMMENT '角色ID',
                                create_user VARCHAR(64) NOT NULL COMMENT '创建者',
                                create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-                               update_user VARCHAR(64) NOT NULL COMMENT '更新者',
+                               update_user VARCHAR(64)  COMMENT '更新者',
                                update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
                                FOREIGN KEY (user_id) REFERENCES sys_user(id),
                                FOREIGN KEY (role_id) REFERENCES sys_role(id)

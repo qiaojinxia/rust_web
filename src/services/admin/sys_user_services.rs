@@ -23,7 +23,7 @@ pub async fn create_user(
         gender: Set(gender),
         mobile: Set(mobile),
         create_user: Set(create_user.unwrap()),
-        update_user: Set(update_user.unwrap()),
+        update_user: Set(update_user),
         // ... 设置其他字段
         ..Default::default()
     };

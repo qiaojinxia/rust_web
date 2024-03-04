@@ -19,8 +19,6 @@ pub struct RoleDto {
 /// Description: DTO for creating a role with field validations.
 #[derive(Debug, Serialize, Deserialize, Validate)]
 pub struct RoleCreationDto {
-    #[validate(length(min = 1, max = 16, message = "role_id must be between 1 and 16 characters long"))]
-    pub role_id: Option<String>,
     #[validate(length(min = 1, max = 16, message = "role_code must be between 1 and 16 characters long"))]
     pub role_code: Option<String>,
     #[validate(length(min = 1, max = 64, message = "role_name must be between 1 and 64 characters long"))]

@@ -10,7 +10,7 @@ macro_rules! setup_test_app {
         test::init_service(
             App::new()
                 .app_data(app_state) // 存储应用状态
-                .configure(routes::admin::role_routes::api_config)
+                .configure(routes::admin::sys_role_routes::api_config)
                 // .wrap(middleware::auth_middleware::JWTAuth)
                 .wrap(Logger::default())
                 .wrap(Logger::new("%a %D ms %{User-Agent}i"))
@@ -20,11 +20,10 @@ macro_rules! setup_test_app {
 
 #[cfg(test)]
 mod tests {
-    use actix_redis::RedisActor;
     use actix_web::{test, App, http};
     use actix_web::middleware::Logger;
-    use actix_web::web::{Data, resource};
-    use my_gpt::{app, common, middleware, routes};
+    use actix_web::web::{Data};
+    use my_gpt::{app, common, routes};
     use my_gpt::config::globals;
     use my_gpt::config::globals::AppState;
     use crate::tests::globals::APP_STATE;
@@ -35,9 +34,8 @@ mod tests {
         let app = setup_test_app!();
 
         let role_creation_dto = RoleCreationDto {
-            role_id: Some("test_role_id".to_string()),
-            role_code: Some("test_role_code".to_string()),
-            role_name: Some("Test Role Name".to_string()),
+            role_code: Some("role_id_2".to_string()),
+            role_name: Some("Test Role Name2".to_string()),
             description: Some("Test Role Description".to_string()),
             status: 1,
         };

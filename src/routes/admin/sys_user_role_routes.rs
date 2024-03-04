@@ -1,0 +1,62 @@
+use actix_web::{delete, get, post, web, HttpResponse, Responder};
+use crate::services::admin::sys_user_role_services::{assign_roles_to_user, get_user_roles, remove_role_from_user};
+use crate::dto::admin::sys_user_role_dto::{AssignRolesDto, AssignRolesRespDto, UserRolesRespDto, RemoveRoleRespDto, UserRoleDto};
+use crate::common::resp::{ApiResponse, ApiError};
+use crate::config::globals;
+use crate::create_response;
+use actix_web::ResponseError;
+
+// Assign roles to a user
+#[post("/users/{userId}/roles")]
+async fn assign_roles(
+    app_state: web::Data<globals::AppState>,
+    path: web::Path<i32>,
+    roles_dto: web::Json<AssignRolesDto>,
+) -> impl Responder {
+    let user_id = path.into_inner();
+    let role_ids = roles_dto.into_inner().role_ids;
+    let result = assign_roles_to_user(&*app_state.mysql_conn,
+                                      user_id, role_ids, "admin".to_string()).await
+        .map(|_| AssignRolesRespDto { success: true })
+        .map_err(|error| ApiError::InternalServerError(error.to_string()));
+
+    create_response!(result)
+}
+
+// Get a user's roles
+#[get("/users/{userId}/roles")]
+async fn get_roles(
+    app_state: web::Data<globals::AppState>,
+    path: web::Path<i32>,
+) -> impl Responder {
+    let user_id = path.into_inner();
+    let result = get_user_roles(&*app_state.mysql_conn, user_id).await
+        .map(|roles| roles.iter()
+            .map(|role| UserRoleDto::from(role.clone())) // 在这里进行解引用
+            .collect::<Vec<UserRoleDto>>())
+        .map(|roles| UserRolesRespDto { roles })
+        .map_err(|error| ApiError::InternalServerError(error.to_string()));
+
+    create_response!(result)
+}
+
+// Remove a role from a user
+#[delete("/users/{userId}/roles/{roleId}")]
+async fn remove_role(
+    app_state: web::Data<globals::AppState>,
+    path: web::Path<(i32, i32)>,
+) -> impl Responder {
+    let (user_id, role_id) = path.into_inner();
+    let result = remove_role_from_user(&*app_state.mysql_conn, user_id, role_id).await
+        .map(|_| RemoveRoleRespDto { success: true })
+        .map_err(|error| ApiError::InternalServerError(error.to_string()));
+
+    create_response!(result)
+}
+
+// Remember to register these handlers in your Actix Web app configuration
+pub fn api_config(cfg: &mut web::ServiceConfig) {
+    cfg.service(assign_roles)
+        .service(get_roles)
+        .service(remove_role);
+}

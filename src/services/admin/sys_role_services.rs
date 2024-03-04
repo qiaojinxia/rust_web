@@ -14,6 +14,7 @@ pub async fn create_role(
     let mut role = sys_role::ActiveModel {
         ..Default::default()
     };
+
     if let Some(rn) = role_create_info.role_name {
         role.role_name = Set(rn);
     }
@@ -23,6 +24,7 @@ pub async fn create_role(
     if let Some(code) = role_create_info.role_code {
         role.role_code = Set(code);
     }
+
     role.status = Set(role_create_info.status);
 
     role.create_user = Set(create_user);
