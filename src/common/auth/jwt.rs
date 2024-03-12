@@ -10,6 +10,17 @@ pub struct Claims {
     pub role:String, // 用户权限
 }
 
+impl Claims {
+    pub fn is_expired(&self) -> bool {
+        let current_time = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs() as usize;
+
+        current_time > self.exp
+    }
+}
+
 pub fn decode_jwt(token: &str) -> Result<TokenData<Claims>, jsonwebtoken::errors::Error> {
     decode::<Claims>(
         token,

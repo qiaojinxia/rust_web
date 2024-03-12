@@ -1,9 +1,12 @@
 use actix_web::{error::ErrorUnauthorized, Error};
 use std::future::{ready, Ready};
 
+
 use actix_web::dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform};
 use actix_web::http::StatusCode;
 use futures_util::future::LocalBoxFuture;
+use validator::ValidateLength;
+use crate::common;
 use crate::common::resp::ApiResponse;
 
 pub struct JWTAuth;
@@ -65,13 +68,13 @@ impl<S, B> Service<ServiceRequest> for JWTAuthHiMiddleware<S>
 
     fn call(&self, req: ServiceRequest) -> Self::Future {
         if self.is_need_verification(req.path()) {
+            let json_error = ApiResponse{
+                code: StatusCode::UNAUTHORIZED.as_u16(),
+                message: "api unauthorized err".to_string(),
+                data: (),
+            };
             let authorization = req.headers().get("Authorization");
             if authorization.is_none() {
-                let json_error = ApiResponse{
-                    code: StatusCode::UNAUTHORIZED.as_u16(),
-                    message: "api unauthorized err".to_string(),
-                    data: (),
-                };
                 return Box::pin(async move { Err(ErrorUnauthorized(format!("{:?}",json_error))) });
             }
 
@@ -87,19 +90,33 @@ impl<S, B> Service<ServiceRequest> for JWTAuthHiMiddleware<S>
             }
 
             let authorization = authorization.unwrap();
+            if authorization.validate_length(Some(7),Some(1024), None){
+                return Box::pin(async move { Err(ErrorUnauthorized(format!("{:?}",json_error))) });
+            }
+            let token = &authorization[7..]; // 'Bearer ' + token
 
-            let _token = &authorization[7..]; // 'Bearer ' + token
+            let user_info = common::auth::jwt::decode_jwt(token);
 
-            // let token_data = Ok("".to_string());
-            //
-            // if let Err(err) = token_data {
-            //     return Box::pin(async { Err(ErrorUnauthorized(err)) });
-            // }
-            //
-            // let token_data = token_data.unwrap();
-
-            // I need to pass this user_id to the next Handle
-            // println!("user_id: {}", &token_data.claims.user_id);
+            if let Ok(user_info) = user_info {
+                if user_info.claims.is_expired() {
+                    let json_error = ApiResponse {
+                        code: StatusCode::UNAUTHORIZED.as_u16(),
+                        message: "token expired".to_string(),
+                        data: (),
+                    };
+                    return Box::pin(async move { Err(ErrorUnauthorized(format!("{:?}", json_error))) });
+                }
+                let claim  = user_info.claims;
+                // 在这里可以继续处理有效的用户信息
+                println!("user auth success user_name:{} user_role:{}",claim.user_name, claim.role)
+            } else {
+                let json_error = ApiResponse {
+                    code: StatusCode::UNAUTHORIZED.as_u16(),
+                    message: "invalid token".to_string(),
+                    data: (),
+                };
+                return Box::pin(async move { Err(ErrorUnauthorized(format!("{:?}", json_error))) });
+            }
         }
 
         let fut = self.service.call(req);
