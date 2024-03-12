@@ -24,7 +24,7 @@ pub struct RoleCreationDto {
     #[validate(length(min = 1, max = 64, message = "role_name must be between 1 and 64 characters long"))]
     pub role_name: Option<String>,
     #[validate(length(min = 1, max = 512, message = "description must be between 1 and 512 characters long"))]
-    pub description: Option<String>,
+    pub role_desc: Option<String>,
     pub status: i8,
 }
 

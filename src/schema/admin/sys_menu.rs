@@ -25,7 +25,6 @@ pub struct Model {
     pub update_time: Option<DateTimeUtc>,
     pub status: i8,
     pub is_hidden: i8,
-    pub is_deleted: i8,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

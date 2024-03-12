@@ -52,7 +52,7 @@ pub async fn get_user_roles(
             sys_user_role::Relation::SysUser.def(),
         )
         .columns([sys_user_role::Column::Id,sys_user_role::Column::RoleId,
-            sys_user_role::Column::UserId,sys_user_role::Column::CreateUser,])
+            sys_user_role::Column::UserId,sys_user_role::Column::CreateUser])
         .into_model::<sys_user_role::Model>()
         .all(db)
         .await

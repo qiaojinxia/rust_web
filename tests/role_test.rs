@@ -36,7 +36,7 @@ mod tests {
         let role_creation_dto = RoleCreationDto {
             role_code: Some("role_id_2".to_string()),
             role_name: Some("Test Role Name2".to_string()),
-            description: Some("Test Role Description".to_string()),
+            role_desc: Some("Test Role Description2".to_string()),
             status: 1,
         };
 

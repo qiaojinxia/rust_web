@@ -18,7 +18,7 @@ pub async fn create_role(
     if let Some(rn) = role_create_info.role_name {
         role.role_name = Set(rn);
     }
-    if let Some(dsc) = role_create_info.description {
+    if let Some(dsc) = role_create_info.role_desc {
         role.description = Set(Some(dsc));
     }
     if let Some(code) = role_create_info.role_code {

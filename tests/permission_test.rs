@@ -35,8 +35,8 @@ mod permission_tests {
         let app = setup_test_app!();
 
         let permission_creation_dto = PermissionCreationDto {
-            permission_code: "Test Permission Name".to_string(),
-            description: Some("Test Permission Description".to_string()),
+            permission_code: "Test Permission Name2".to_string(),
+            description: Some("Test Permission Description2".to_string()),
         };
 
         let req = test::TestRequest::post()

@@ -1,3 +1,4 @@
+use chrono::Utc;
 use sea_orm::{DatabaseConnection, DbErr, EntityTrait, ColumnTrait, QueryFilter, JoinType, QuerySelect, RelationTrait};
 use sea_orm::ActiveValue::Set;
 use crate::schema::admin::{sys_role, sys_role_permission};
@@ -8,6 +9,7 @@ pub async fn assign_permissions_to_role(
     db: &DatabaseConnection,
     role_id: i32,
     permission_ids: Vec<i32>,
+    create_user: String,
 ) -> Result<Vec<sys_role_permission::Model>, DbErr> {
     // Prepare the role_permissions data for insertion
     let role_permissions: Vec<sys_role_permission::ActiveModel> = permission_ids
@@ -15,6 +17,8 @@ pub async fn assign_permissions_to_role(
         .map(|permission_id| sys_role_permission::ActiveModel {
             role_id: Set(role_id),
             permission_id: Set(permission_id),
+            create_user: Set(create_user.clone()),
+            create_time: Set(Some(Utc::now())),
             ..Default::default()
         })
         .collect();
@@ -40,30 +44,30 @@ pub async fn get_role_permissions(
     role_id: i32,
 ) -> Result<Vec<sys_role_permission::Model>, DbErr> {
     SysRolePermission::find()
-        .join(
-            JoinType::InnerJoin,
-            sys_role::Relation::SysRolePermission.def(),
-        )
         .filter(sys_role::Column::Id.eq(role_id))
         .select_only()
-        .column(sys_role_permission::Column::PermissionId)
+        .join(
+            JoinType::InnerJoin,
+            sys_role_permission::Relation::SysRole.def(),
+        )
+        .columns([sys_role_permission::Column::Id,sys_role_permission::Column::PermissionId,
+            sys_role_permission::Column::RoleId, sys_role_permission::Column::CreateUser])
         .into_model::<sys_role_permission::Model>()
         .all(db)
         .await
 }
 
 //remove_permission_from_role 删除角色的权限
+
 pub async fn remove_permission_from_role(
     db: &DatabaseConnection,
     role_id: i32,
     permission_id: i32,
 ) -> Result<u64, DbErr> {
-    let role_permission = sys_role_permission::ActiveModel {
-        role_id: Set(role_id),
-        permission_id: Set(permission_id),
-        ..Default::default()
-    };
-    SysRolePermission::delete(role_permission)
+    // 使用 delete_many 方法并结合过滤条件来删除记录
+    SysRolePermission::delete_many()
+        .filter(sys_role_permission::Column::RoleId.eq(role_id))
+        .filter(sys_role_permission::Column::PermissionId.eq(permission_id))
         .exec(db)
         .await
         .map(|res| res.rows_affected)

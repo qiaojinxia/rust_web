@@ -23,7 +23,6 @@ pub struct Model {
     pub update_user: Option<String>,
     pub update_time: Option<DateTimeUtc>,
     pub last_login: Option<DateTimeUtc>,
-    pub is_deleted: i8,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

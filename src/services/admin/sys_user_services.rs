@@ -107,7 +107,7 @@ pub async fn find_user_by_email_or_mobile(
     mobile: Option<String>,
 ) -> Result<Option<sys_user::Model>, DbErr> {
     let  query = SysUser::find()
-        .filter(sys_user::Column::IsDeleted.eq(0)).filter(sys_user::Column::Email.eq(email)).filter(sys_user::Column::Mobile.eq(mobile));
+        .filter(sys_user::Column::Email.eq(email)).filter(sys_user::Column::Mobile.eq(mobile));
     query.one(db).await
 }
 
@@ -117,6 +117,6 @@ pub async fn find_user_by_username(
     user_name: Option<String>,
 ) -> Result<Option<sys_user::Model>, DbErr> {
     let  query = SysUser::find()
-        .filter(sys_user::Column::IsDeleted.eq(0)).filter(sys_user::Column::UserName.eq(user_name));
+        .filter(sys_user::Column::UserName.eq(user_name));
     query.one(db).await
 }

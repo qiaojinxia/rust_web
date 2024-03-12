@@ -12,7 +12,7 @@ CREATE TABLE sys_user (
                           update_user VARCHAR(64)  COMMENT '更新者',
                           update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
                           last_login TIMESTAMP COMMENT '上次登录时间',
-                          is_deleted TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否删除'
+                          status TINYINT(1) NOT NULL DEFAULT 1 COMMENT '用户状态 0(正常)/2(禁用)',
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- 角色表
@@ -21,11 +21,11 @@ CREATE TABLE sys_role (
                           role_code VARCHAR(64) NOT NULL UNIQUE COMMENT '角色code',
                           role_name VARCHAR(64) NOT NULL UNIQUE COMMENT '角色名称',
                           description VARCHAR(255) COMMENT '描述',
-                          status TINYINT(1) NOT NULL DEFAULT 1 COMMENT '角色状态 0(关)/1(开)',
                           create_user VARCHAR(64) NOT NULL COMMENT '创建者',
                           create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
                           update_user VARCHAR(64) COMMENT '更新者',
-                          update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+                          update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+                          status TINYINT(1) NOT NULL DEFAULT 1 COMMENT '角色状态 0(关)/1(开)',
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
@@ -61,7 +61,6 @@ CREATE TABLE sys_menu (
                           update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
                           status TINYINT(1) NOT NULL DEFAULT 0 COMMENT '菜单状态 0(禁用)/1(启用)',
                           is_hidden TINYINT(1) NOT NULL DEFAULT 1 COMMENT '是否隐藏',
-                          is_deleted TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否删除'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
@@ -85,7 +84,7 @@ CREATE TABLE sys_role_permission (
                                      permission_id INT NOT NULL COMMENT '权限ID',
                                      create_user VARCHAR(64) NOT NULL COMMENT '创建者',
                                      create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-                                     update_user VARCHAR(64) NOT NULL COMMENT '更新者',
+                                     update_user VARCHAR(64) COMMENT '更新者',
                                      update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
                                      FOREIGN KEY (role_id) REFERENCES sys_role(id),
                                      FOREIGN KEY (permission_id) REFERENCES sys_permission(id)
