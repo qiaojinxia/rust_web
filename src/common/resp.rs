@@ -2,8 +2,8 @@ use actix_web::{Error, HttpResponse, ResponseError};
 use actix_web::error::ErrorUnauthorized;
 use serde::{Serialize, Deserialize};
 use serde_json::json;
-use thiserror::Error;
 use actix_web::http::StatusCode;
+use thiserror::Error as MyError;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ApiResponse<T> {
@@ -42,7 +42,7 @@ impl<T> ApiResponse<T> {
 
 }
 
-#[derive(Error, Debug, Serialize, Deserialize)]
+#[derive(MyError, Debug, Serialize, Deserialize)]
 pub enum ApiError {
     #[error("Internal Server Error {0}")]
     InternalServerError(String),
