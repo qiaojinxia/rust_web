@@ -1,13 +1,23 @@
 use serde::{Serialize, Deserialize};
 use std::time::{SystemTime, UNIX_EPOCH, Duration};
 use jsonwebtoken::{decode, encode, Algorithm, Header, EncodingKey,DecodingKey, Validation, TokenData};
+use sea_orm::FromQueryResult;
 use crate::config;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
     pub user_name: String,  // 通常用于存放唯一用户标识
     pub exp: usize,   // Token的过期时间
-    pub role:String, // 用户权限
+    pub role_codes:Vec<String>, // 用户权限
+}
+
+// 假设的结构体表示菜单项
+#[derive(Debug, FromQueryResult)]
+pub struct MenuInfo {
+    pub id: i32,
+    pub menu_name: String,
+    pub route: String,
+    pub route_name: String,
 }
 
 impl Claims {
@@ -16,7 +26,6 @@ impl Claims {
             .duration_since(UNIX_EPOCH)
             .unwrap()
             .as_secs() as usize;
-
         current_time > self.exp
     }
 }
@@ -29,7 +38,7 @@ pub fn decode_jwt(token: &str) -> Result<TokenData<Claims>, jsonwebtoken::errors
     )
 }
 
-pub fn generate_jwt(user_name: &str, role: &str) -> Result<String, jsonwebtoken::errors::Error> {
+pub fn generate_jwt(user_name: String, roles: Vec<String>) -> Result<String, jsonwebtoken::errors::Error> {
     let expiration = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .expect("Time went backwards")
@@ -38,9 +47,9 @@ pub fn generate_jwt(user_name: &str, role: &str) -> Result<String, jsonwebtoken:
         .as_secs() as usize;
 
     let claims = Claims {
-        user_name: user_name.to_string(),
+        user_name,
         exp: expiration,
-        role: role.to_string(),
+        role_codes: roles,
     };
 
     encode(

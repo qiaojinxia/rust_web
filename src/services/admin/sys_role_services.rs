@@ -1,10 +1,10 @@
-use sea_orm::{ActiveModelTrait, DatabaseConnection, DbErr, EntityTrait};
+use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, DbErr, EntityTrait};
 use sea_orm::ActiveValue::Set;
 use crate::dto;
 use crate::dto::admin::sys_role_dto;
 use crate::schema::admin::{sys_role};
 use crate::schema::admin::prelude::{SysRole};
-
+use sea_orm::QueryFilter;
 //create_role 创建角色
 pub async fn create_role(
     db: &DatabaseConnection,
@@ -83,4 +83,21 @@ pub async fn delete_role(
         .exec(db)
         .await
         .map(|res| res.rows_affected)
+}
+
+// 根据 role_code 数组返回所有匹配的 id
+pub async fn get_role_ids_by_role_codes(
+    db: &DatabaseConnection,
+    role_codes: Vec<String>, // role_code 数组
+) -> Result<Vec<i32>, DbErr> { // 假设 id 类型为 i32
+    let roles = SysRole::find()
+        .filter(sys_role::Column::RoleCode.is_in(role_codes)) // 使用 is_in 方法来过滤 role_code
+        .all(db)
+        .await?;
+
+    let ids: Vec<i32> = roles.into_iter()
+        .map(|role| role.id) // 假设 sys_role::Model 有一个 id 字段
+        .collect();
+
+    Ok(ids)
 }

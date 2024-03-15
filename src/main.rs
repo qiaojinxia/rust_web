@@ -4,7 +4,7 @@ use std::thread;
 use signal_hook::consts::signal::{SIGINT, SIGTERM};
 use signal_hook::iterator::Signals;
 use tokio::sync::oneshot;
-use my_gpt::{app, routes};
+use my_gpt::{app, middleware, routes};
 use my_gpt::config::globals;
 use actix_web::middleware::Logger;
 use my_gpt::config::globals::AppState;
@@ -37,7 +37,8 @@ async fn main() -> std::io::Result<()> {
                     .configure(routes::admin::sys_user_role_routes::api_config) // role_user相关配置
                     .configure(routes::admin::sys_role_permission_routes::api_config) // role_user相关配置
             )
-            // .wrap(middleware::auth_middleware::JWTAuth)
+            .wrap(middleware::jwt_auth_middleware::JWTAuth)
+            .wrap(middleware::permission_check_middleware::PermissionCheck)
             .wrap(Logger::default())
             .wrap(Logger::new("%a %D ms %{User-Agent}i"))
             

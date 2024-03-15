@@ -1,4 +1,5 @@
-use actix_web::{HttpResponse, ResponseError};
+use actix_web::{Error, HttpResponse, ResponseError};
+use actix_web::error::ErrorUnauthorized;
 use serde::{Serialize, Deserialize};
 use serde_json::json;
 use thiserror::Error;
@@ -60,6 +61,15 @@ pub enum ApiError {
 
     #[error("Invalid Argument: {0}")]
     InvalidArgument(String),
+}
+pub fn create_error_response(message: &str, code: StatusCode) -> Error {
+    let json_error = ApiResponse {
+        code: code.as_u16(),
+        message: message.to_string(),
+        data: (),
+    };
+    let error_body = serde_json::to_string(&json_error).unwrap_or_else(|_| "{}".to_string());
+    ErrorUnauthorized(error_body)
 }
 
 impl ResponseError for ApiError {

@@ -29,7 +29,7 @@ pub async fn register(
                                                       user_register_dto.email.clone(), Gender::M, user_register_dto.mobile.clone(), user_register_dto.create_user.clone(),
                                                       user_register_dto.update_user.clone()).await.unwrap();
             // 生成JWT
-            let token = generate_jwt(&user.user_name, "user").unwrap(); // 假设这是一个外部函数，用于生成JWT
+            let token = generate_jwt(user.user_name.clone(), vec!["user".to_string()]).unwrap(); // 假设这是一个外部函数，用于生成JWT
             // 创建并返回AuthResponse
             rs = Ok(sys_auth_dto::UserRegistrationRespDto { token, user_name:user.user_name });
         },
@@ -57,7 +57,7 @@ pub async fn login(
             // 验证密码
             if verify_password(&sys_login_dto.password.clone().unwrap(), &user.password).unwrap() {
                 // 生成JWT
-                let token = generate_jwt(&user.user_name, "user").unwrap(); // 假设这是一个外部函数，用于生成JWT
+                let token = generate_jwt(user.user_name.clone(), vec!["user".to_string()]).unwrap(); // 假设这是一个外部函数，用于生成JWT
 
                 rs = Ok(sys_auth_dto::SysLoginRespDto { user_name: user.user_name, token });
             }else{
