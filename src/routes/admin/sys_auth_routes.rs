@@ -13,6 +13,8 @@ use crate::services::admin::sys_user_services;
 use actix_web::ResponseError;
 use validator::Validate;
 use config::globals;
+use actix_session::{Session};
+
 
 #[post("/register")]
 pub async fn register(
@@ -79,11 +81,27 @@ async fn health_checker_handler() -> impl Responder {
 
     create_response!(rs)
 }
-
+#[get("/count")]
+async fn index(session: Session) -> impl Responder {
+    let count = session.get::<i32>("counter").unwrap().map(|count| count + 1).unwrap_or(1);
+    match session.insert("counter", count ) {
+        Ok(_) => {
+            let res= format!("Success {}",count.to_string());
+            let rs: Result<&str, ApiError> = Ok(res.as_str());
+            create_response!(rs)
+        }
+        Err(e) => {
+            // 这里处理错误，例如返回一个内部服务器错误
+            let rs: Result<&str, ApiError> = Err(ApiError::InternalServerError(e.to_string()));
+            create_response!(rs)
+        }
+    }
+}
 
 pub fn api_config(cfg: &mut web::ServiceConfig) {
     cfg
         .service(login)
+        .service(index)
         .service(register)
         .service(health_checker_handler);
 }

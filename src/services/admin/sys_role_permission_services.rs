@@ -77,62 +77,28 @@ pub async fn remove_permission_from_role(
 
 
 
-
 pub async fn get_menus_by_role_id(
     db: &DatabaseConnection,
     role_ids: Vec<i32>,
 ) -> Result<Vec<MenuInfo>, DbErr> {
-
-    SysRolePermission::find()
-        .filter(sys_role_permission::Column::RoleId.is_in(role_ids)) // 使用 is_in 来过滤多个角色ID
+    let menus = SysRolePermission::find()
+        .filter(sys_role_permission::Column::RoleId.is_in(role_ids))
         .join(
             JoinType::InnerJoin,
-            sys_permission::Relation::SysRolePermission.def(),
+            sys_role_permission::Relation::SysPermission.def(),
         )
         .join(
             JoinType::InnerJoin,
-            sys_menu::Relation::SysPermission.def(),
+            sys_permission::Relation::SysMenu.def(),
         )
-        .columns([
-            sys_menu::Column::Id,
-            sys_menu::Column::MenuName,
-            sys_menu::Column::Route,
-            sys_menu::Column::RouteName,
-        ])        .distinct()
-        .into_model::<MenuInfo>()
-        // 使用 distinct_on 方法来确保结果去重，注意这可能需要根据你的数据库支持调整
-        // 如果你的数据库不支持 distinct_on，你可能需要在结果集上应用 Rust 的去重逻辑
+        .select_only()
+        .column_as(sys_menu::Column::Id, "id")
+        .column_as(sys_menu::Column::MenuName, "menu_name")
+        .column_as(sys_menu::Column::Route, "route")
+        .column_as(sys_menu::Column::RouteName, "route_name")
+        .into_model::<MenuInfo>() // 确保 MenuInfo 匹配你想要的字段
         .all(db)
-        .await
+        .await;
 
-
-    // let raw_stmt = Query::select()
-    //     .columns([
-    //         sys_menu::Column::Id,
-    //         sys_menu::Column::MenuName,
-    //         sys_menu::Column::Route,
-    //         sys_menu::Column::RouteName,
-    //     ])
-    //     .from(sys_role_permission::Entity)
-    //     .inner_join(
-    //         sys_permission::Entity,
-    //         all![
-    //             Expr::col((sys_role_permission::Entity, sys_role_permission::Column::PermissionId)).
-    //             equals((sys_permission::Entity,sys_permission::Column::Id)),
-    //         ]
-    //     )
-    //     .inner_join(
-    //         sys_menu::Entity,
-    //         all![
-    //             Expr::col((sys_permission::Entity, sys_permission::Column::Id)).
-    //             equals((sys_menu::Entity,sys_menu::Column::PermissionId)),
-    //         ]
-    //     ).expr(Expr::col(sys_role_permission::Column::RoleId).eq(role_id)).to_owned();
-    //
-    //
-    //
-    //
-    // let result = db.query_all(stmt).await;
-
-
+    menus
 }

@@ -33,3 +33,6 @@ actix-service ="2.0"
 actix-redis = "0.13.0"
 redis-async = "0.17.0"
 mockall = "0.12.1"
+actix-cors = "0.7.0"
+actix-session = { version = "0.9.0", features = ["redis-rs-session"] }
+time = "0.3.34"

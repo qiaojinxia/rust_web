@@ -1,6 +1,5 @@
 use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, DbErr, EntityTrait};
 use sea_orm::ActiveValue::Set;
-use crate::dto;
 use crate::dto::admin::sys_role_dto;
 use crate::schema::admin::{sys_role};
 use crate::schema::admin::prelude::{SysRole};
@@ -51,7 +50,7 @@ pub async fn get_role_by_id(
 pub async fn update_role(
     db: &DatabaseConnection,
     role_id: i32,
-    role_update_info: dto::admin::sys_role_dto::RoleUpdateDto
+    role_update_info: sys_role_dto::RoleUpdateDto
 ) -> Result<Option<sys_role::Model>, DbErr> {
     let mut role: sys_role::ActiveModel = SysRole::find_by_id(role_id).one(db).await?.unwrap().into();
 

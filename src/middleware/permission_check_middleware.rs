@@ -51,17 +51,16 @@ impl<S, B> Service<ServiceRequest> for PermissionCheckMiddleware<S>
         let mysql_conn = req.app_data::<web::Data<globals::AppState>>().unwrap().mysql_conn.clone();
         let service = self.service.clone();
 
-        // 在这里获取路径
         let path = req.path().to_string();
 
-        // todo 在这里获取 JWT 信息 暂时用remove 后面修改
-        let jwt_info: Claims = req.extensions_mut().remove::<Claims>().unwrap();
-        let roles_clone = jwt_info.role_codes.clone();
+        let roles =  req.extensions().get::<Claims>().unwrap_or(&Claims::new()).role_codes.clone();
 
         Box::pin(async move {
-
+            if roles.is_empty() {
+                return Err(create_error_response("Authorization Failed: No Roles Found", StatusCode::UNAUTHORIZED));
+            }
             // 首先根据角色代码获取角色ID
-            match get_role_ids_by_role_codes(&*mysql_conn, roles_clone).await {
+            match get_role_ids_by_role_codes(&*mysql_conn, roles).await {
                 Ok(role_ids) => {
                     // 然后根据角色ID获取菜单信息
                     match get_menus_by_role_id(&*mysql_conn, role_ids).await {

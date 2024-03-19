@@ -28,6 +28,7 @@ mod role_permission_tests {
     use my_gpt::config::globals::APP_STATE;
     use actix_web::App;
     use actix_web::middleware::Logger;
+    use my_gpt::services::admin::sys_role_permission_services::get_menus_by_role_id;
 
     // 测试为指定角色分配权限
     #[actix_rt::test]
@@ -71,5 +72,19 @@ mod role_permission_tests {
 
         let resp: common::resp::ApiResponse<RemovePermissionRespDto> = test::call_and_read_body_json(&app, req).await;
         assert_eq!(resp.code, http::StatusCode::OK); // 确认我们收到了200 OK响应
+    }
+
+    //测试 获取角色所有菜单
+    #[actix_rt::test]
+    async fn test_get_menus_by_role_id(){
+        app::init().await;
+        let app_state = APP_STATE.get().unwrap();
+        let result = get_menus_by_role_id(&app_state.mysql_conn.clone(),vec![1,2]).await;
+        // 检查结果是否成功
+        assert!(result.is_ok());
+        let menus = result.unwrap();
+        // 检查是否至少有一个菜单返回
+        // 注意：这个断言可能需要根据你的具体测试数据库内容进行调整
+        assert!(!menus.is_empty());
     }
 }

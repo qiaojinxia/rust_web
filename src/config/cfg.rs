@@ -1,7 +1,7 @@
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize)]
+#[derive( Deserialize)]
 pub struct AppConfig {
     ///数据库配置
     pub database: DatabaseConfig,

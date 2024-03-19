@@ -4,7 +4,7 @@ use jsonwebtoken::{decode, encode, Algorithm, Header, EncodingKey,DecodingKey, V
 use sea_orm::FromQueryResult;
 use crate::config;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Claims {
     pub user_name: String,  // 通常用于存放唯一用户标识
     pub exp: usize,   // Token的过期时间
@@ -27,6 +27,13 @@ impl Claims {
             .unwrap()
             .as_secs() as usize;
         current_time > self.exp
+    }
+    pub fn new() -> Self{
+        Claims {
+            user_name: "".to_string(),
+            exp: 0,
+            role_codes: vec![],
+        }
     }
 }
 

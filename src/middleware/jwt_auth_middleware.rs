@@ -83,16 +83,16 @@ impl<S, B> Service<ServiceRequest> for JWTAuthHiMiddleware<S>
 
         let token = &authorization["Bearer ".len()..];
         match common::auth::jwt::decode_jwt(token) {
-            Ok(user_info) if !user_info.claims.is_expired() => {
-                debug!("user auth success user_name: {} user_role: {:?}", user_info.claims.user_name, user_info.claims.role_codes);
+            Ok(jwt_info) if !jwt_info.claims.is_expired() => {
+                debug!("user auth success user_name: {} user_role: {:?}", jwt_info.claims.user_name, jwt_info.claims.role_codes);
 
-                req.extensions_mut().insert(user_info);
+                req.extensions_mut().insert(jwt_info);
 
                 let fut = self.service.call(req);
                 Box::pin(async move {
                     fut.await
                 })
-            },
+            }
             Ok(_) => Box::pin(async { Err(create_error_response("Token expired", StatusCode::UNAUTHORIZED)) }),
             Err(_) => Box::pin(async { Err(create_error_response("Invalid token", StatusCode::UNAUTHORIZED)) }),
         }
