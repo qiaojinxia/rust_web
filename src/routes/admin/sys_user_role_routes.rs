@@ -5,6 +5,7 @@ use crate::common::resp::{ApiResponse, ApiError};
 use crate::config::globals;
 use crate::create_response;
 use actix_web::ResponseError;
+use validator::Validate;
 
 // Assign roles to a user
 #[post("/users/{userId}/roles")]
@@ -14,7 +15,7 @@ async fn assign_roles(
     roles_dto: web::Json<AssignRolesDto>,
 ) -> impl Responder {
     let user_id = path.into_inner();
-    if let Err(errors) = roles_dto.validate() {
+    if let Err(errors) = roles_dto.0.validate() {
         return create_response!(Err::<AssignRolesRespDto, ApiError>(ApiError::InvalidArgument(errors.to_string())));
     }
     let role_ids = roles_dto.into_inner().role_ids;

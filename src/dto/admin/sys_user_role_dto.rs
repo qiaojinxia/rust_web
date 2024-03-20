@@ -1,8 +1,9 @@
 use serde::{Deserialize, Serialize};
+use validator_derive::Validate;
 use crate::schema::admin::sys_user_role::Model;
 
 // DTO for assigning roles to a user
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Validate)]
 pub struct AssignRolesDto {
     pub role_ids: Vec<i32>,
 }
