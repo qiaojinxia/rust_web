@@ -1,5 +1,5 @@
 use chrono::Utc;
-use sea_orm::{ActiveModelTrait, DatabaseConnection, DbErr, EntityTrait};
+use sea_orm::{ActiveModelTrait, DatabaseConnection, DbErr, EntityTrait, PaginatorTrait};
 use sea_orm::ActiveValue::Set;
 use sea_orm::prelude::Expr;
 use serde_json::json;
@@ -50,6 +50,24 @@ pub async fn get_menus(
     db: &DatabaseConnection,
 ) -> Result<Vec<sys_menu::Model>, DbErr> {
     SysMenu::find().all(db).await
+}
+
+
+// 修改get_menus函数以支持分页
+pub async fn get_menus_paged(
+    db: &DatabaseConnection,
+    page: u64, // 当前页码，从1开始
+    page_size: u64, // 每页条目数
+) -> Result<(Vec<sys_menu::Model>, u64), DbErr> {
+    // 使用.find()开始构建查询
+    let paginator = SysMenu::find()
+        .paginate(db, page_size); // 设置每页条目数
+    let num_pages = paginator.num_pages().await?; // 获取总页数
+
+    let menus = paginator
+        .fetch_page(page - 1).await?; // 获取指定页的结果，页码从0开始，所以这里需要减1
+
+    Ok((menus, num_pages))
 }
 
 //get_menu_by_id 获取单个菜单

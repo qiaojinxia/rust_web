@@ -30,7 +30,7 @@ async fn main() -> std::io::Result<()> {
 
     let redis_config = &globals::APP_CONFIG.redis;
     let redis_url = format!("redis://:{}@{}:{}",
-                            redis_config.password.clone().unwrap(),
+                            redis_config.password.clone().unwrap_or("".to_string()),
                             redis_config.host,
                             redis_config.port);
 

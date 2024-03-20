@@ -25,11 +25,12 @@ pub async fn register(
     match user_register_dto.0.validate() {
         Ok(_) => {
             // 散列密码
-            let password_hash = auth::crypto::hash_password(user_register_dto.password.clone()); // 假设这是一个外部函数，用于安全地散列密码
+            let password_hash =
+                auth::crypto::hash_password(user_register_dto.password.clone()); // 假设这是一个外部函数，用于安全地散列密码
             // 创建用户
             let user = sys_user_services::create_user(&*app_state.mysql_conn, user_register_dto.user_name.clone(), password_hash.unwrap(),
-                                                      user_register_dto.email.clone(), Gender::M, user_register_dto.mobile.clone(), user_register_dto.create_user.clone(),
-                                                      user_register_dto.update_user.clone()).await.unwrap();
+                                                      user_register_dto.email.clone(), Gender::M, user_register_dto.mobile.clone(),
+                                                      user_register_dto.create_user.clone(), user_register_dto.update_user.clone()).await.unwrap();
             // 生成JWT
             let token = generate_jwt(user.user_name.clone(), vec!["user".to_string()]).unwrap(); // 假设这是一个外部函数，用于生成JWT
             // 创建并返回AuthResponse
@@ -81,9 +82,11 @@ async fn health_checker_handler() -> impl Responder {
 
     create_response!(rs)
 }
+
 #[get("/count")]
 async fn index(session: Session) -> impl Responder {
-    let count = session.get::<i32>("counter").unwrap().map(|count| count + 1).unwrap_or(1);
+    let count = session.get::<i32>("counter").
+        unwrap().map(|count| count + 1).unwrap_or(1);
     match session.insert("counter", count ) {
         Ok(_) => {
             let res= format!("Success {}",count.to_string());

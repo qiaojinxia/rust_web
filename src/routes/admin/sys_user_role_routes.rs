@@ -14,6 +14,9 @@ async fn assign_roles(
     roles_dto: web::Json<AssignRolesDto>,
 ) -> impl Responder {
     let user_id = path.into_inner();
+    if let Err(errors) = roles_dto.validate() {
+        return create_response!(Err::<AssignRolesRespDto, ApiError>(ApiError::InvalidArgument(errors.to_string())));
+    }
     let role_ids = roles_dto.into_inner().role_ids;
     let result = assign_roles_to_user(&*app_state.mysql_conn,
                                       user_id, role_ids, "admin".to_string()).await
