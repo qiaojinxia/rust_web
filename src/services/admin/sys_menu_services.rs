@@ -4,8 +4,8 @@ use sea_orm::ActiveValue::Set;
 use sea_orm::prelude::Expr;
 use serde_json::json;
 use crate::dto::admin::sys_menu_dto::{MenuCreationDto, MenuUpdateDto};
-use crate::schema::admin::{sys_menu};
-use crate::schema::admin::prelude::{SysMenu};
+use crate::schemas::admin::{sys_menu};
+use crate::schemas::admin::prelude::{SysMenu};
 use sea_orm::QueryFilter;
 use sea_orm::ColumnTrait;
 

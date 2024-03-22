@@ -23,7 +23,7 @@ mod tests {
     use actix_web::{test, App, http};
     use actix_web::middleware::Logger;
     use actix_web::web::{Data};
-    use my_gpt::{app, common, routes};
+    use my_gpt::{app, common, handlers};
     use my_gpt::config::globals;
     use my_gpt::config::globals::AppState;
     use crate::tests::globals::APP_STATE;

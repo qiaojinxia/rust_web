@@ -2,8 +2,8 @@ use chrono::Utc;
 use sea_orm::{ActiveModelTrait, DatabaseConnection, DbErr, EntityTrait, TransactionTrait};
 use sea_orm::ActiveValue::Set;
 use sea_orm::prelude::Expr;
-use crate::schema::admin::{sys_menu, sys_permission, sys_role_permission};
-use crate::schema::admin::prelude::{SysMenu, SysPermission, SysRolePermission};
+use crate::schemas::admin::{sys_menu, sys_permission, sys_role_permission};
+use crate::schemas::admin::prelude::{SysMenu, SysPermission, SysRolePermission};
 use sea_orm::QueryFilter;
 use sea_orm::ColumnTrait;
 

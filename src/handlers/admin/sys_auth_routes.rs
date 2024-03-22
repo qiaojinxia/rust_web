@@ -8,7 +8,7 @@ use crate::common::resp::ApiResponse;
 use crate::{config, create_response};
 use actix_web::HttpResponse;
 use crate::common::resp::ApiError;
-use crate::schema::admin::sea_orm_active_enums::Gender;
+use crate::schemas::admin::sea_orm_active_enums::Gender;
 use crate::services::admin::sys_user_services;
 use actix_web::ResponseError;
 use validator::Validate;

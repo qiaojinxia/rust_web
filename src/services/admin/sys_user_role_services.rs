@@ -1,7 +1,7 @@
 use sea_orm::{DatabaseConnection, DbErr, EntityTrait, ColumnTrait, QueryFilter, JoinType, QuerySelect, RelationTrait};
 use sea_orm::ActiveValue::Set;
-use crate::schema::admin::{sys_user, sys_user_role};
-use crate::schema::admin::prelude::{SysUserRole};
+use crate::schemas::admin::{sys_user, sys_user_role};
+use crate::schemas::admin::prelude::{SysUserRole};
 
 
 //assign_roles_to_user，用于给用户分配角色
@@ -28,7 +28,7 @@ pub async fn assign_roles_to_user(
 
     // Assuming you have some way to fetch the inserted records,
     // you might perform a query to get them or use the returning clause if your database supports it.
-    // This is a hypothetical example and will depend on your schema and ORM's capabilities:
+    // This is a hypothetical example and will depend on your schemas and ORM's capabilities:
     let assigned_roles = sys_user_role::Entity::find()
         .filter(sys_user_role::Column::UserId.eq(user_id))
         .all(db)

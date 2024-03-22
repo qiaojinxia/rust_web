@@ -21,7 +21,7 @@ macro_rules! setup_test_app {
 mod permission_tests {
     use actix_web::{test, http};
     use actix_web::web::Data;
-    use my_gpt::{app, common, routes};
+    use my_gpt::{app, common, handlers};
     use my_gpt::config::globals::AppState;
     use my_gpt::dto::admin::sys_permission_dto::{PermissionCreationDto, PermissionCreationRespDto,
                                                  PermissionsRespDto, PermissionRespDto, PermissionUpdateDto, PermissionUpdateRespDto, PermissionDeleteRespDto};

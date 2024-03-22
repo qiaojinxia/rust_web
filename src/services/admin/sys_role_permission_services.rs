@@ -2,8 +2,8 @@ use chrono::Utc;
 use sea_orm::{DatabaseConnection, DbErr, EntityTrait, ColumnTrait, QueryFilter, JoinType, QuerySelect, RelationTrait};
 use sea_orm::ActiveValue::Set;
 use crate::common::auth::jwt::MenuInfo;
-use crate::schema::admin::{sys_menu, sys_permission, sys_role, sys_role_permission};
-use crate::schema::admin::prelude::{SysRolePermission};
+use crate::schemas::admin::{sys_menu, sys_permission, sys_role, sys_role_permission};
+use crate::schemas::admin::prelude::{SysRolePermission};
 
 
 //assign_permissions_to_role 为角色分配权限

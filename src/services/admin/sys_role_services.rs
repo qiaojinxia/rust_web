@@ -1,8 +1,8 @@
 use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, DbErr, EntityTrait};
 use sea_orm::ActiveValue::Set;
 use crate::dto::admin::sys_role_dto;
-use crate::schema::admin::{sys_role};
-use crate::schema::admin::prelude::{SysRole};
+use crate::schemas::admin::{sys_role};
+use crate::schemas::admin::prelude::{SysRole};
 use sea_orm::QueryFilter;
 //create_role 创建角色
 pub async fn create_role(
@@ -68,6 +68,7 @@ pub async fn update_role(
     }
     role.update(db).await.map(Some)
 }
+
 
 //delete_role 删除角色
 pub async fn delete_role(

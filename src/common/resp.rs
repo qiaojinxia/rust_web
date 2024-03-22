@@ -11,6 +11,24 @@ pub struct ApiResponse<T> {
     pub message: String,
     pub data: T,
 }
+#[derive(Serialize, Deserialize, Debug)]
+pub struct Pagination<T> {
+    pub current: u32,
+    pub size: u32,
+    pub total: u32,
+    pub records: Vec<T>,
+}
+
+impl<T> Pagination<T> {
+    pub fn new(current: u32, size: u32, total: u32, records: Vec<T>) -> Self {
+        Pagination {
+            current,
+            size,
+            total,
+            records,
+        }
+    }
+}
 
 impl<T> ApiResponse<T> {
     pub fn new(code: u16, message: &str, data: T) -> ApiResponse<T> {

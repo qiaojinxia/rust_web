@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use crate::schema::admin::sys_permission::Model;
+use crate::schemas::admin::sys_permission::Model;
 
 // DTOs for Request and Response
 #[derive(Debug, Serialize, Deserialize)]

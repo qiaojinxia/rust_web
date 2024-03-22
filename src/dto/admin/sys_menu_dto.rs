@@ -1,10 +1,10 @@
 use serde::{Deserialize, Serialize};
 use validator_derive::Validate;
-use crate::schema::admin::sys_menu::Model;
+use crate::schemas::admin::sys_menu::Model;
 
 /// Menu Base Information DTO
 /// Description: Represents the foundational data for a menu item, including identifiers,
-/// names, icons, routes, and hierarchical information. It serves as a core component for various menu-related operations.
+/// names, icons, handlers, and hierarchical information. It serves as a core component for various menu-related operations.
 #[derive(Debug, Serialize, Deserialize, Validate)]
 pub struct MenuBaseDto {
     pub id: Option<i32>,

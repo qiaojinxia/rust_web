@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use crate::schema::admin::sys_role_permission::Model;
+use crate::schemas::admin::sys_role_permission::Model;
 
 // DTO for assigning permissions to a role
 #[derive(Debug, Serialize, Deserialize)]

@@ -9,7 +9,7 @@ use actix_session::config::PersistentSession;
 use signal_hook::consts::signal::{SIGINT, SIGTERM};
 use signal_hook::iterator::Signals;
 use tokio::sync::oneshot;
-use my_gpt::{app, middleware, routes};
+use my_gpt::{app, middleware, handlers};
 use my_gpt::config::globals;
 use actix_web::middleware::Logger;
 use time::Duration;
@@ -65,14 +65,14 @@ async fn main() -> std::io::Result<()> {
                 redis_conn:  app_state.redis_conn.clone(),
                 mysql_conn: app_state.mysql_conn.clone(),
             })).service(
-                web::scope("/auth").configure(routes::admin::sys_auth_routes::api_config) // auth相关配置
+            web::scope("/auth").configure(handlers::admin::sys_auth_routes::api_config) // auth相关配置
             ).service(
                 web::scope("/api")
-                    .configure(routes::admin::sys_role_routes::api_config) // role相关配置
-                    .configure(routes::admin::sys_menu_routes::api_config) // role相关配置
-                    .configure(routes::admin::sys_permission_routes::api_config) // role相关配置
-                    .configure(routes::admin::sys_user_role_routes::api_config) // role_user相关配置
-                    .configure(routes::admin::sys_role_permission_routes::api_config) // role_user相关配置
+                    .configure(handlers::admin::sys_role_routes::api_config) // role相关配置
+                    .configure(handlers::admin::sys_menu_routes::api_config) // role相关配置
+                    .configure(handlers::admin::sys_permission_routes::api_config) // role相关配置
+                    .configure(handlers::admin::sys_user_role_routes::api_config) // role_user相关配置
+                    .configure(handlers::admin::sys_role_permission_routes::api_config) // role_user相关配置
                     .wrap(middleware::permission_check_middleware::PermissionCheck)
                     .wrap(middleware::jwt_auth_middleware::JWTAuth)
             ) // 应用CORS中间件

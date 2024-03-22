@@ -1,6 +1,8 @@
+use chrono::NaiveDateTime;
+use sea_orm::FromQueryResult;
 use serde::{Deserialize, Serialize};
 use validator_derive::Validate;
-use crate::schema::admin::sys_user_role::Model;
+use crate::schemas::admin::sys_user_role::Model;
 
 // DTO for assigning roles to a user
 #[derive(Debug, Serialize, Deserialize, Validate)]
@@ -46,3 +48,20 @@ impl From<Model> for UserRoleDto {
 pub struct RemoveRoleRespDto {
     pub success: bool,
 }
+
+
+// #[derive(Debug, Serialize, Deserialize, FromQueryResult)]
+// pub struct UserDto {
+//     id: i32,
+//     user_name: String,
+//     nick_name: String,
+//     user_email: String,
+//     user_phone: String,
+//     user_gender: String,
+//     status: String,
+//     user_roles: Vec<String>, // 注意: 这个字段可能需要特别处理，取决于你的数据库设计和查询方法
+//     create_by: String,
+//     create_time: NaiveDateTime,
+//     update_by: String,
+//     update_time: NaiveDateTime,
+// }
