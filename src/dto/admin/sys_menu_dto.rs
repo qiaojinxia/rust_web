@@ -41,10 +41,10 @@ impl From<Model> for MenuBaseDto {
             route: Some(model.route), // 同样是将 Option<String> 转换为 Option<String>
             route_name: Some(model.route_name), // 同上
             parent_id: model.parent_id, // 直接复制 Option<i32>
-            menu_type: model.r#type.unwrap_or_default(), // 处理 Option<i8> 到 i8 的转换
+            menu_type: model.r#type, // 处理 Option<i8> 到 i8 的转换
             status: model.status,
             is_hidden: model.is_hidden,
-            order: model.sort.unwrap_or_default(), // 处理 Option<i8> 到 i8 的转换
+            order: model.sort, // 处理 Option<i8> 到 i8 的转换
         }
     }
 }

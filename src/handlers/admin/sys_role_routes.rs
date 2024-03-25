@@ -100,9 +100,9 @@ pub async fn update_role(
 
     // 使用早返回处理验证错误
     if let Err(e) = role_update_dto.0.validate() {
-        return create_response!(Err::<Option<sys_role_dto::RoleUpdateRespDto>, ApiError>(ApiError::InvalidArgument(e.to_string())));
+        return create_response!(Err::<Option<sys_role_dto::RoleUpdateRespDto>,
+            ApiError>(ApiError::InvalidArgument(e.to_string())));
     }
-
     // 将业务逻辑处理结果映射到响应
     let result = sys_role_services::update_role(&*app_state.mysql_conn,
                                                 role_id, role_update_dto.into_inner()).await

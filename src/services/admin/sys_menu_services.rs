@@ -19,7 +19,7 @@ pub async fn create_menu(
         menu_name: Set(menu_crate_req.base.name.unwrap()),
         route: Set(menu_crate_req.base.route.unwrap()),
         route_name:Set(menu_crate_req.base.route_name.unwrap()),
-        sort: Set(Some(menu_crate_req.base.order)),
+        sort: Set(menu_crate_req.base.order),
         parent_id: Set(menu_crate_req.base.parent_id),
         create_user:Set(create_user),
         status: Set(menu_crate_req.base.status),
@@ -96,8 +96,8 @@ pub async fn update_menu(
         menu.permission_id = Set(Some(perm_id));
     }
     menu.route = Set(menu_update_req.base.route.unwrap());
-    menu.sort = Set(Some(menu_update_req.base.order));
-    menu.r#type = Set(Some(menu_update_req.base.menu_type));
+    menu.sort = Set(menu_update_req.base.order);
+    menu.r#type = Set(menu_update_req.base.menu_type);
 
     if let Some(pid) = menu_update_req.base.parent_id {
         menu.parent_id = Set(Some(pid));

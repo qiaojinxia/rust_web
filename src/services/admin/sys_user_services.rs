@@ -1,32 +1,30 @@
-use std::fmt::Write;
-use actix_web::web::BufMut;
-use sea_orm::{ActiveModelTrait, ColumnTrait, ConnectionTrait, DatabaseConnection, DbErr, EntityTrait, Iden, JoinType, PaginatorTrait, QueryFilter, RelationTrait, Statement};
+use sea_orm::{ActiveModelTrait, ColumnTrait, ConnectionTrait,
+              DatabaseConnection, DbErr, EntityTrait, FromQueryResult,
+              QueryFilter, QuerySelect};
 use sea_orm::ActiveValue::Set;
-use sea_orm::sea_query::{Alias, Expr, MysqlQueryBuilder, Query};
-use crate::schemas::admin::{sys_role, sys_role_permission, sys_user, sys_user_role};
+use sea_orm::sea_query::{Alias, Expr, Query};
+use crate::common::auth;
+use crate::dto::admin::sys_user_dto::{UserCreateDto, UserWithRolesDto};
+use crate::schemas::admin::{sys_role, sys_user, sys_user_role};
 use crate::schemas::admin::prelude::{SysUser};
 use crate::schemas::admin::sea_orm_active_enums::Gender;
 
 //create_user 创建用户
 pub async fn create_user(
     db: &DatabaseConnection,
-    user_name: Option<String>,
-    password: String,
-    email: Option<String>,
-    gender: Gender,
-    mobile: Option<String>,
-    create_user: Option<String>,
-    update_user: Option<String>,
+    user_create_req:UserCreateDto,
+    create_user: String
 ) -> Result<sys_user::Model, DbErr> {
+    let password_hash =
+        auth::crypto::hash_password(Some(user_create_req.password)).unwrap(); // 假设这是一个外部函数，用于安全地散列密码
 
     let user = sys_user::ActiveModel {
-        user_name: Set(user_name.unwrap()),
-        password: Set(password),
-        email: Set(email.unwrap()),
-        gender: Set(gender),
-        mobile: Set(mobile),
-        create_user: Set(create_user.unwrap()),
-        update_user: Set(update_user),
+        user_name: Set(user_create_req.user_name),
+        password: Set(password_hash),
+        email: Set(user_create_req.user_email),
+        mobile: Set(Some(user_create_req.user_phone)),
+        status: Set(user_create_req.status.parse().unwrap()),
+        create_user: Set(create_user),
         // ... 设置其他字段
         ..Default::default()
     };
@@ -34,60 +32,83 @@ pub async fn create_user(
 }
 // 定义一个表示自定义函数的结构体
 
-// pub async fn get_users_with_roles(
-//     db: &DatabaseConnection,
-//     current: usize,
-//     size: usize,
-// ) -> Result<Vec<(i32, String, String, String)>, DbErr> {
-//     let offset = (current.saturating_sub(1)) * size;
-//
-//     let mut query = Query::select();
-//     query.columns(vec![
-//         sys_user::Column::Id.into(),
-//         sys_user::Column::UserName.into(),
-//         // sys_user::Column::NickName.into(),
-//         sys_user::Column::Email.into(),
-//         sys_user::Column::Mobile.into(),
-//         sys_user::Column::Gender.into(),
-//         // sys_user::Column::Status.into(),
-//         sys_user::Column::CreateUser.into(),
-//         sys_user::Column::CreateTime.into(),
-//         sys_user::Column::UpdateUser.into(),
-//         sys_user::Column::UpdateTime.into(),
-//     ])
-//         .expr_as(
-//             Expr::cust("GROUP_CONCAT(DISTINCT sys_role.role_code SEPARATOR ',')"),
-//             Alias::new("role_codes"),
-//         ) // 使用表达式与别名
-//         .from(sys_user::Entity)
-//         .inner_join(
-//             sys_user_role::Entity,
-//             Expr::col((sys_user::Entity, sys_user::Column::Id))
-//                 .equals((sys_user_role::Entity, sys_user_role::Column::UserId)),
-//         )
-//         .inner_join(
-//             sys_role::Entity,
-//             Expr::col((sys_user_role::Entity, sys_user_role::Column::RoleId))
-//                 .equals((sys_role::Entity, sys_role::Column::Id)),
-//         )
-//         .group_by_col(sys_user::Column::Id) // 分组以便使用聚合函数
-//         .limit(size as u64) // 分页
-//         .offset(offset as u64);
-//
-//     let builder = db.get_database_backend();
-//     let stmt = builder.build(&query); // 构建查询语句
-//     let rows = db.query_all(stmt).await?;
-//
-//     let result: Vec<(i32, String, String, String)> = rows.iter().map(|row| {
-//         let id = row.try_get_by("id").unwrap_or_default();
-//         let user_name = row.try_get_by("user_name").unwrap_or_default();
-//         let email = row.try_get_by("email").unwrap_or_default();
-//         let role_codes = row.try_get_by("role_codes").unwrap_or_default();
-//         (id, user_name, email, role_codes)
-//     }).collect();
-//
-//     Ok(result)
-// }
+pub async fn get_users_with_roles(
+    db: &DatabaseConnection,
+    current: usize,
+    size: usize,
+) -> Result<Vec<UserWithRolesDto>, DbErr> {
+    let offset = (current.saturating_sub(1)) * size;
+
+    let mut query = Query::select();
+    query.columns(vec![
+        (sys_user::Entity, sys_user::Column::Id),
+        (sys_user::Entity, sys_user::Column::UserName),
+        (sys_user::Entity, sys_user::Column::NickName),
+        (sys_user::Entity, sys_user::Column::Email),
+        (sys_user::Entity, sys_user::Column::Mobile),
+        (sys_user::Entity, sys_user::Column::Gender),
+        (sys_user::Entity, sys_user::Column::Status),
+        (sys_user::Entity, sys_user::Column::CreateUser),
+        (sys_user::Entity, sys_user::Column::CreateTime),
+        (sys_user::Entity, sys_user::Column::UpdateUser),
+        (sys_user::Entity, sys_user::Column::UpdateTime),
+    ]).column( (sys_role::Entity, sys_role::Column::Id))
+        .expr_as(
+            Expr::cust("GROUP_CONCAT(DISTINCT sys_role.role_code SEPARATOR ',')"),
+            Alias::new("role_codes"),
+        ) // Use expression with alias
+        .from(sys_user::Entity)
+        .inner_join(
+            sys_user_role::Entity,
+            Expr::col((sys_user::Entity, sys_user::Column::Id))
+                .equals((sys_user_role::Entity, sys_user_role::Column::UserId)),
+        )
+        .inner_join(
+            sys_role::Entity,
+            Expr::col((sys_user_role::Entity, sys_user_role::Column::RoleId))
+                .equals((sys_role::Entity, sys_role::Column::Id)),
+        )
+        .group_by_col((sys_user::Entity, sys_user::Column::Id)) // Group by to use aggregate function
+        .limit(size as u64) // Pagination
+        .offset(offset as u64);
+
+    let builder = db.get_database_backend();
+    let stmt = builder.build(&query); // 构建查询语句
+    let rows = db.query_all(stmt).await?;
+    let result: Vec<UserWithRolesDto> = rows.iter().map(|row| {
+        let user_id = row.try_get_by("id").unwrap_or_default();
+        let user_name = row.try_get_by("user_name").unwrap_or_default();
+        let nick_name = row.try_get_by("nick_name").unwrap_or_default();
+        let user_email = row.try_get_by("email").unwrap_or_default();
+        let user_phone = row.try_get_by("mobile").unwrap_or_default();
+        let user_gender = row.try_get_by("gender").unwrap_or_default();
+        let status = row.try_get_by("status").unwrap_or_default();
+        let create_by = row.try_get_by("create_user").unwrap_or_default();
+        let create_time = row.try_get_by("create_time").unwrap_or_default();
+        let update_by = row.try_get_by("update_user").unwrap_or_default();
+        let update_time = row.try_get_by("update_time").unwrap_or_default();
+        let role_codes: String = row.try_get_by("role_codes").unwrap_or_default();
+        let user_roles: Result<Vec<i32>, _> = role_codes.split(',')
+            .map(|code| code.trim().parse())
+            .collect();
+        UserWithRolesDto {
+            id: user_id,
+            user_name,
+            nick_name,
+            user_email,
+            user_phone,
+            user_gender,
+            status,
+            create_by,
+            create_time,
+            update_by,
+            update_time,
+            user_roles: Some(user_roles.unwrap_or(vec![])),
+        }
+    }).collect();
+
+    Ok(result)
+}
 
 //get_users 获取用户列表
 pub async fn get_users(
@@ -96,20 +117,7 @@ pub async fn get_users(
     SysUser::find().all(db).await
 }
 
-// 修改后的get_users函数，添加分页参数current和size
-pub async fn get_users_paginated(
-    db: &DatabaseConnection,
-    current: u64, // 当前页码
-    size: u64,    // 每页数量
-) -> Result<Vec<sys_user::Model>, DbErr> {
-    // 使用SysUser::find()开始构建查询
-    let paginator = SysUser::find()
-        .paginate(db, size); // 分页器，指定每页数量
 
-    let result = paginator.
-        fetch_page(current - 1).await; // 获取指定页的数据，页码从0开始，所以这里用current - 1
-    result
-}
 
 //get_user_by_id 获取单个用户
 pub async fn get_user_by_id(
@@ -147,6 +155,7 @@ pub async fn update_user(
     if let Some(mb) = mobile {
         user.mobile = Set(Some(mb));
     }
+
     user.update(db).await.map(Some)
 }
 
@@ -193,4 +202,22 @@ pub async fn find_user_by_username(
     let  query = SysUser::find()
         .filter(sys_user::Column::UserName.eq(user_name));
     query.one(db).await
+}
+
+#[derive(FromQueryResult)]
+struct TotalCount {
+    total_count: i32,
+}
+
+pub async fn get_total_users_count(db: &DatabaseConnection) -> Result<i32, DbErr> {
+    let total = SysUser::find()
+        .select_only()
+        .column_as(sys_user::Column::Id.count(), "total_count")
+        .into_model::<TotalCount>()
+        .one(db)
+        .await?
+        .map(|total_count_model| total_count_model.total_count)
+        .unwrap_or(0); // 如果没有结果，则默认为0
+
+    Ok(total)
 }

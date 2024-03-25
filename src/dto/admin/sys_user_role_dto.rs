@@ -1,5 +1,3 @@
-use chrono::NaiveDateTime;
-use sea_orm::FromQueryResult;
 use serde::{Deserialize, Serialize};
 use validator_derive::Validate;
 use crate::schemas::admin::sys_user_role::Model;

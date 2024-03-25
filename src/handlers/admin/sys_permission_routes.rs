@@ -2,7 +2,9 @@ use actix_web::{delete, get, HttpResponse, post, put, Responder, web};
 use crate::common::resp::ApiError;
 use crate::config::globals;
 use crate::create_response;
-use crate::dto::admin::sys_permission_dto::{PermissionCreationDto, PermissionCreationRespDto, PermissionDeleteRespDto, PermissionDto, PermissionRespDto, PermissionsRespDto, PermissionUpdateDto, PermissionUpdateRespDto};
+use crate::dto::admin::sys_permission_dto::{PermissionCreationDto, PermissionCreationRespDto,
+                                            PermissionDeleteRespDto, PermissionDto, PermissionRespDto,
+                                            PermissionsRespDto, PermissionUpdateDto, PermissionUpdateRespDto};
 use crate::services::admin::sys_permission_services;
 use crate::common::resp::ApiResponse;
 use actix_web::ResponseError;
@@ -34,8 +36,8 @@ async fn create_permission(
 async fn get_permissions(
     app_state: web::Data<globals::AppState>,
 ) -> impl Responder {
-    let result = sys_permission_services::get_permissions(&*app_state.mysql_conn).await
-        .map(|permissions| permissions.iter()
+    let result = sys_permission_services::get_permissions(
+        &*app_state.mysql_conn).await.map(|permissions| permissions.iter()
             .map(|permission| PermissionDto::from(permission.clone())) // 在这里进行解引用
             .collect::<Vec<PermissionDto>>()).map(|permissions|PermissionsRespDto{
             base:permissions,
@@ -53,7 +55,8 @@ async fn get_permission_by_id(
     path: web::Path<i32>,
 ) -> impl Responder {
     let permission_id = path.into_inner();
-    let result = sys_permission_services::get_permission_by_id(&*app_state.mysql_conn, permission_id).await
+    let result = sys_permission_services::get_permission_by_id(
+        &*app_state.mysql_conn, permission_id).await
         .map(|permission| PermissionRespDto{
             base: PermissionDto::from(permission.unwrap()),
         }
@@ -94,7 +97,8 @@ async fn delete_permission(
     path: web::Path<i32>,
 ) -> impl Responder {
     let permission_id = path.into_inner();
-    let result = sys_permission_services::delete_permission(&*app_state.mysql_conn, permission_id).await
+    let result = sys_permission_services::delete_permission(
+        &*app_state.mysql_conn, permission_id).await
         .map(|effects| PermissionDeleteRespDto{
             success: effects > 0
         })
