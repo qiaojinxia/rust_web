@@ -1,4 +1,5 @@
 -- 用户表
+DROP TABLE IF EXISTS sys_user;
 CREATE TABLE sys_user (
                           id INT AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
                           user_name VARCHAR(64) NOT NULL UNIQUE COMMENT '用户名',
@@ -17,6 +18,7 @@ CREATE TABLE sys_user (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- 角色表
+DROP TABLE IF EXISTS sys_role;
 CREATE TABLE sys_role (
                           id INT AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
                           role_code VARCHAR(64) NOT NULL UNIQUE COMMENT '角色code',
@@ -31,6 +33,7 @@ CREATE TABLE sys_role (
 
 
 -- 权限表
+DROP TABLE IF EXISTS sys_permission;
 CREATE TABLE sys_permission (
                                 id INT AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
                                 permission_code VARCHAR(64)  NOT NULL UNIQUE COMMENT '权限名称',
@@ -47,7 +50,7 @@ CREATE TABLE sys_menu (
                           id INT AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
                           menu_name VARCHAR(64) NOT NULL COMMENT '菜单名称',
                           permission_id INT COMMENT '关联的权限ID', -- 考虑添加外键约束，前提是已经有相应的权限表
-                          route VARCHAR(255) NOT NULL COMMENT '路由路径',
+                          route_path VARCHAR(255) NOT NULL COMMENT '路由路径',
                           route_name VARCHAR(255) NOT NULL COMMENT '路由名称',
                           sort TINYINT NOT NULL DEFAULT 0 COMMENT '菜单排序', -- 不允许NULL，提供默认排序值
                           parent_id INT DEFAULT NULL COMMENT '父菜单ID', -- 考虑添加外键约束，以自引用此表
@@ -67,6 +70,7 @@ CREATE TABLE sys_menu (
 
 
 -- 用户角色关联表
+DROP TABLE IF EXISTS sys_user_role;
 CREATE TABLE sys_user_role (
                                id INT AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
                                user_id INT NOT NULL COMMENT '用户ID',
@@ -80,6 +84,7 @@ CREATE TABLE sys_user_role (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- 角色权限关联表
+DROP TABLE IF EXISTS sys_role_permission;
 CREATE TABLE sys_role_permission (
                                      id INT AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
                                      role_id INT NOT NULL COMMENT '角色ID',
