@@ -26,7 +26,7 @@ mod menu_tests {
     use my_gpt::config::globals::AppState;
     use my_gpt::config::globals::APP_STATE;
 
-    use my_gpt::dto::admin::sys_menu_dto::{MenuCreationDto, MenuUpdateDto, MenuDto,
+    use my_gpt::dto::admin::sys_menu_dto::{MenuCreateDto, MenuUpdateDto, MenuDto,
                                            MenusResponseDto, MenuCreationResponseDto,
                                            MenuUpdateResponseDto, MenuDeleteResponseDto,
                                            MenuBaseDto};
@@ -39,11 +39,11 @@ mod menu_tests {
         let app = setup_test_app!();
 
         let menu_base_dto = MenuBaseDto {
-            name: Some("测试菜单".to_string()),
+            menu_name: Some("测试菜单".to_string()),
             icon_type: 1,
             icon: Some("icon_example".to_string()),
             route_name: Some("test_route_name".to_string()),
-            route: Some("/test/route".to_string()),
+            route_path: Some("/test/route".to_string()),
             menu_type: 1,
             status: 1,
             is_hidden: 0,
@@ -52,7 +52,7 @@ mod menu_tests {
         };
 
         // 使用MenuBaseDto实例构造MenuCreationDto
-        let menu_creation_dto = MenuCreationDto {
+        let menu_creation_dto = MenuCreateDto {
             base: menu_base_dto,
         };
 
@@ -91,11 +91,11 @@ mod menu_tests {
     #[actix_rt::test]
     async fn test_update_menu() {
         let menu_base_dto = MenuBaseDto {
-            name: Some("测试菜单改".to_string()),
+            menu_name: Some("测试菜单改".to_string()),
             icon_type: 1,
             icon: Some("icon_example".to_string()),
             route_name: Some("test_route_name_update".to_string()),
-            route: Some("/test/route".to_string()),
+            route_path: Some("/test/route".to_string()),
             menu_type: 1,
             status: 1,
             is_hidden: 0,

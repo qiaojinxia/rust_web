@@ -52,7 +52,7 @@ pub async fn get_users_with_roles(
     app_state: web::Data<globals::AppState>,
     query: web::Query<common_dto::PaginationQueryDto>,
 ) -> impl Responder {
-    let current_page = query.page.unwrap_or(1);
+    let current_page = query.current.unwrap_or(1);
     let page_size = query.size.unwrap_or(10);
     let result:Result<PaginationResponseDto<UserWithRolesDto>,ApiError>;
     // 查询总条数

@@ -44,8 +44,7 @@ async fn main() -> std::io::Result<()> {
         let cors = Cors::default()
             .allow_any_origin() // 注意：在生产环境中，你可能想要更严格地配置这个
             .allow_any_method()
-            .allow_any_header()
-            .supports_credentials();
+            .allow_any_header().supports_credentials();
 
         App::new()
             .wrap(cors)
@@ -65,17 +64,17 @@ async fn main() -> std::io::Result<()> {
                 redis_conn:  app_state.redis_conn.clone(),
                 mysql_conn: app_state.mysql_conn.clone(),
             })).service(
-            web::scope("/auth").configure(handlers::admin::sys_auth_routes::api_config) // auth相关配置
+            web::scope("/auth").configure(handlers::admin::sys_auth_handler::api_config) // auth相关配置
             ).service(
-                web::scope("/api")
-                    .configure(handlers::admin::sys_role_routes::api_config) // role相关配置
-                    .configure(handlers::admin::sys_menu_routes::api_config) // role相关配置
-                    .configure(handlers::admin::sys_permission_routes::api_config) // role相关配置
-                    .configure(handlers::admin::sys_user_role_routes::api_config) // role_user相关配置
-                    .configure(handlers::admin::sys_role_permission_routes::api_config) // role_user相关配置
-                    .configure(handlers::admin::sys_user_routes::api_config)
-                    .wrap(middleware::permission_check_middleware::PermissionCheck)
-                    .wrap(middleware::jwt_auth_middleware::JWTAuth)
+                web::scope("/system-manage")
+                    .configure(handlers::admin::sys_role_handler::api_config) // role相关配置
+                    .configure(handlers::admin::sys_menu_handler::api_config) // role相关配置
+                    .configure(handlers::admin::sys_permission_handler::api_config) // role相关配置
+                    .configure(handlers::admin::sys_user_role_handler::api_config) // role_user相关配置
+                    .configure(handlers::admin::sys_role_permission_handler::api_config) // role_user相关配置
+                    .configure(handlers::admin::sys_user_handler::api_config)
+                    // .wrap(middleware::permission_check_middleware::PermissionCheck)
+                    // .wrap(middleware::jwt_auth_middleware::JWTAuth)
             ) // 应用CORS中间件
             .wrap(Logger::new("%a %D ms %{User-Agent}i"))
     }).bind(format!("{}:{}",

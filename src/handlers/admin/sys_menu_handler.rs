@@ -5,28 +5,46 @@ use crate::common::resp::{ApiResponse, ApiError};
 use crate::config::globals;
 use crate::create_response;
 use actix_web::ResponseError;
+use crate::dto::admin::common_dto::{PaginationQueryDto, PaginationResponseDto};
 // 假设您已经定义了一个宏来简化响应的创建
-use crate::dto::admin::sys_menu_dto::{MenuCreationDto, MenuUpdateDto, MenuDto,
-                                      MenusResponseDto, MenuCreationResponseDto,
+use crate::dto::admin::sys_menu_dto::{MenuCreateDto, MenuUpdateDto,
+                                      MenuCreationResponseDto,
                                       MenuUpdateResponseDto, MenuDeleteResponseDto,
-                                      MenuBaseDto};
+                                      MenuBaseRespDto};
 #[post("/menus")]
 pub async fn create_menu(
     app_state: web::Data<globals::AppState>,
-    menu_creation_dto: web::Json<MenuCreationDto>,
+    menu_create_dto: web::Json<MenuCreateDto>,
 ) -> impl Responder {
-    if let Err(errors) = menu_creation_dto.validate() {
-        return create_response!(Err::<MenuCreationResponseDto, ApiError>(ApiError::InvalidArgument(errors.to_string())));
+    if let Err(errors) = menu_create_dto.0.validate() {
+        return create_response!(
+            Err::<MenuCreationResponseDto, ApiError>(ApiError::InvalidArgument(errors.to_string())));
     }
     let result = sys_menu_services::create_menu(
         &*app_state.mysql_conn,
-        menu_creation_dto.into_inner(), "admin".to_string())
+        menu_create_dto.into_inner(), "admin".to_string())
         .await
-        .map(|menu| MenuCreationResponseDto {
-            base: MenuBaseDto::from(menu)
-        })
+        .map(|menu| MenuBaseRespDto::from(menu))
         .map_err(|error| ApiError::InternalServerError(error.to_string()));
 
+    create_response!(result)
+}
+
+#[get("/menus/paged")]
+pub async fn get_menus_paged(
+    app_state: web::Data<globals::AppState>,
+    web::Query(info): web::Query<PaginationQueryDto>,
+) -> impl Responder {
+    let current = info.current.unwrap_or(1);
+    let page_size = info.size.unwrap_or(10);
+
+    let result = sys_menu_services::get_menus_paged(
+        &*app_state.mysql_conn, current, page_size).await
+        .map(|(menus, total_menus)| {
+            PaginationResponseDto::new(current, page_size, total_menus,
+                                       menus.into_iter().map(|menu| MenuBaseRespDto::from(menu)).collect::<Vec<MenuBaseRespDto>>())
+        })
+        .map_err(|error| ApiError::InternalServerError(error.to_string()));
     create_response!(result)
 }
 
@@ -35,10 +53,8 @@ pub async fn get_menus(
     app_state: web::Data<globals::AppState>,
 ) -> impl Responder {
     let result = sys_menu_services::get_menus(&*app_state.mysql_conn).await
-        .map(|menus| MenusResponseDto {
-            list: menus.into_iter().map(|menu| MenuDto {
-                base: MenuBaseDto::from(menu)
-            }).collect(),
+        .map(|menus| {
+            menus.into_iter().map(|menu| MenuBaseRespDto::from(menu)).collect::<Vec<MenuBaseRespDto>>()
         })
         .map_err(|error| ApiError::InternalServerError(error.to_string()));
 
@@ -52,9 +68,7 @@ pub async fn get_menu_by_id(
 ) -> impl Responder {
     let menu_id = path.into_inner();
     let result = sys_menu_services::get_menu_by_id(&*app_state.mysql_conn, menu_id).await
-        .map(|menu| MenuDto {
-            base: MenuBaseDto::from(menu.unwrap())
-        })
+        .map(|menu| MenuBaseRespDto::from(menu.unwrap()))
         .map_err(|error| ApiError::NotFound(error.to_string()));
 
     create_response!(result)
@@ -77,9 +91,7 @@ pub async fn update_menu(
         menu_update_dto.into_inner(),
     )
         .await
-        .map(|menu| MenuUpdateResponseDto {
-            base: MenuBaseDto::from(menu.unwrap())
-        })
+        .map(|menu|MenuBaseRespDto::from(menu.unwrap()))
         .map_err(|error| ApiError::InternalServerError(error.to_string()));
 
     create_response!(result)
@@ -102,6 +114,7 @@ pub fn api_config(cfg: &mut web::ServiceConfig) {
     cfg
         .service(create_menu)
         .service(get_menus)
+        .service(get_menus_paged)
         .service(get_menu_by_id)
         .service(update_menu)
         .service(delete_menu);

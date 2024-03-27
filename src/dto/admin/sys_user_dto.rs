@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use validator_derive::Validate;
+use validator::Validate;
 use crate::schemas::admin::sys_user::Model;
 
 #[derive(Debug, Deserialize, Serialize, Validate)]

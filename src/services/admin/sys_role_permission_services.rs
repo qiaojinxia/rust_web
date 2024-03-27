@@ -94,7 +94,7 @@ pub async fn get_menus_by_role_id(
         .select_only()
         .column_as(sys_menu::Column::Id, "id")
         .column_as(sys_menu::Column::MenuName, "menu_name")
-        .column_as(sys_menu::Column::Route, "route")
+        .column_as(sys_menu::Column::RoutePath, "route_path")
         .column_as(sys_menu::Column::RouteName, "route_name")
         .into_model::<MenuInfo>() // 确保 MenuInfo 匹配你想要的字段
         .all(db)

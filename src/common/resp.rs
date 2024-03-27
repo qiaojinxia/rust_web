@@ -8,7 +8,7 @@ use thiserror::Error as MyError;
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ApiResponse<T> {
     pub code: u16,
-    pub message: String,
+    pub msg: String,
     pub data: T,
 }
 #[derive(Serialize, Deserialize, Debug)]
@@ -34,7 +34,7 @@ impl<T> ApiResponse<T> {
     pub fn new(code: u16, message: &str, data: T) -> ApiResponse<T> {
         ApiResponse {
             code,
-            message: message.to_string(),
+            msg: message.to_string(),
             data,
         }
     }
@@ -53,7 +53,7 @@ impl<T> ApiResponse<T> {
     {
         ApiResponse {
             code: error.status_code().as_u16(),
-            message: error.to_string(),
+            msg: error.to_string(),
             data: json!({}),
         }
     }
@@ -83,7 +83,7 @@ pub enum ApiError {
 pub fn create_error_response(message: &str, code: StatusCode) -> Error {
     let json_error = ApiResponse {
         code: code.as_u16(),
-        message: message.to_string(),
+        msg: message.to_string(),
         data: (),
     };
     let error_body = serde_json::to_string(&json_error).unwrap_or_else(|_| "{}".to_string());
@@ -103,7 +103,7 @@ impl ResponseError for ApiError {
         };
         let error_response = ApiResponse {
             code: status_code.as_u16(),
-            message: error_message.to_string(),
+            msg: error_message.to_string(),
             data: json!(null), // 通常错误响应的data是null
         };
         HttpResponse::build(status_code).json(error_response)

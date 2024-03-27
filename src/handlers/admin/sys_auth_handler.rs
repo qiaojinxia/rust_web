@@ -44,6 +44,7 @@ pub async fn login(
     create_response!(rs)
 }
 
+
 #[get("/health-checker")]
 async fn health_checker_handler() -> impl Responder {
     const MESSAGE: &str = "Build Simple CRUD API with Rust and Actix Web";

@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use validator_derive::Validate;
+use validator::Validate;
 
 /// Role DTO
 /// Method: General

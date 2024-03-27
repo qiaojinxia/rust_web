@@ -3,46 +3,53 @@ use sea_orm::{ActiveModelTrait, DatabaseConnection, DbErr, EntityTrait, Paginato
 use sea_orm::ActiveValue::Set;
 use sea_orm::prelude::Expr;
 use serde_json::json;
-use crate::dto::admin::sys_menu_dto::{MenuCreationDto, MenuUpdateDto};
+use crate::dto::admin::sys_menu_dto::{MenuCreateDto, MenuUpdateDto};
 use crate::schemas::admin::{sys_menu};
 use crate::schemas::admin::prelude::{SysMenu};
 use sea_orm::QueryFilter;
 use sea_orm::ColumnTrait;
+use crate::common::error::MyError;
 
 //create_menu 创建菜单
 pub async fn create_menu(
     db: &DatabaseConnection,
-    menu_crate_req:MenuCreationDto,
-    create_user:String,
-) -> Result<sys_menu::Model, DbErr> {
+    menu_create_req: MenuCreateDto,
+    create_user: String,
+) -> Result<sys_menu::Model, MyError> {
+    let menu_name = menu_create_req.menu_name.
+        ok_or(MyError::ValidationError("menu_name is required".to_string()))?;
+    let route_path = menu_create_req.route_path.
+        ok_or(MyError::ValidationError("route_path is required".to_string()))?;
+
     let mut menu = sys_menu::ActiveModel {
-        menu_name: Set(menu_crate_req.base.name.unwrap()),
-        route: Set(menu_crate_req.base.route.unwrap()),
-        route_name:Set(menu_crate_req.base.route_name.unwrap()),
-        sort: Set(menu_crate_req.base.order),
-        parent_id: Set(menu_crate_req.base.parent_id),
-        create_user:Set(create_user),
-        status: Set(menu_crate_req.base.status),
-        is_hidden: Set(menu_crate_req.base.is_hidden),
+        menu_name: Set(menu_name),
+        r#type: Set(menu_create_req.menu_type.parse::<i8>().unwrap()),
+        route_path: Set(route_path),
+        route_name: Set(menu_create_req.route_name),
+        parent_id: Set(menu_create_req.parent_id),
+        create_user: Set(create_user),
+        status: Set(menu_create_req.status.parse::<i8>().unwrap()),
+        is_hidden: Set(menu_create_req.is_hidden as i8),
         create_time: Set(Some(Utc::now())),
+        permission_id: Set(menu_create_req.permission_id),
+        sort: Set(menu_create_req.order),
         ..Default::default()
     };
 
-    let mut meta = json!({"icon_type":menu_crate_req.base.icon_type});
+    let mut meta = json!({"icon": menu_create_req.icon});
 
-    if let Some(v) = menu_crate_req.base.icon{
-        if let Some(obj) = meta.as_object_mut() {
-            // 使用insert方法添加新的键值对
-            obj.insert("icon".to_string(), json!(v));
-        }
+    let meta_obj = meta.as_object_mut().
+        ok_or(MyError::ValidationError("Failed to create meta object".to_string()))?;
+
+    meta_obj.insert("icon_type".to_string(), json!(menu_create_req.icon_type));
+
+    if let Some(i18n_key) = menu_create_req.i18n_key {
+        meta_obj.insert("i18n_key".to_string(), json!(i18n_key));
     }
 
-    if let Some(pid) = menu_crate_req.base.parent_id{
-        menu.parent_id = Set(Some(pid));
-    }
     menu.meta = Set(Some(meta));
 
-    menu.insert(db).await
+    menu.insert(db).await.map_err(MyError::from)
 }
 
 //get_menus 获取菜单列表
@@ -88,16 +95,16 @@ pub async fn update_menu(
 
     let mut menu: sys_menu::ActiveModel = SysMenu::find_by_id(menu_id).one(db).await?.unwrap().into();
 
-    if let Some(mn) = menu_update_req.base.name {
-        menu.menu_name = Set(mn);
-    }
-
-    if let Some(perm_id) = menu_update_req.base.permission_id {
-        menu.permission_id = Set(Some(perm_id));
-    }
-    menu.route = Set(menu_update_req.base.route.unwrap());
-    menu.sort = Set(menu_update_req.base.order);
-    menu.r#type = Set(menu_update_req.base.menu_type);
+    // menu.menu_name = Set(menu_update_req.base.menu_name);
+    //
+    // if let Some(perm_id) = menu_update_req.base.permission_id {
+    //     menu.permission_id = Set(Some(perm_id));
+    // }
+    // menu.route_path = Set(menu_update_req.base.route_path);
+    //
+    // menu.sort = Set(menu_update_req.base.order);
+    //
+    // menu.r#type = Set(menu_update_req.base.menu_type);
 
     if let Some(pid) = menu_update_req.base.parent_id {
         menu.parent_id = Set(Some(pid));
