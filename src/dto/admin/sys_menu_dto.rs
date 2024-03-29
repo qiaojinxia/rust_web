@@ -4,8 +4,6 @@ use crate::schemas::admin::sys_menu::Model;
 
 #[derive(Debug, Serialize, Deserialize, Validate)]
 pub struct MenuCreateDto {
-    #[serde(rename = "permissionId", skip_serializing_if = "Option::is_none")]
-    pub permission_id: Option<i32>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     #[validate(length(min = 1, max = 64))]
@@ -29,12 +27,14 @@ pub struct MenuCreateDto {
     #[validate(length(min = 1, max = 256))]
     pub route_path: Option<String>,
 
-    #[serde(rename = "parentId", skip_serializing_if = "Option::is_none")]
-    pub parent_id: Option<i32>,
+    #[serde(rename = "parentId")]
+    pub parent_id: i32,
 
     #[serde(rename = "status")]
     // #[validate(custom = "validate_status")]
     pub status: String,
+
+    pub component: String,
 
     #[serde(rename = "hideInMenu")]
     pub is_hidden: bool,
@@ -44,6 +44,9 @@ pub struct MenuCreateDto {
 
     #[serde(rename = "i18nKey", skip_serializing_if = "Option::is_none")]
     pub i18n_key: Option<String>,
+
+    pub layout: Option<String>,
+
 }
 
 fn validate_status(status: &str) -> Result<(), ValidationError> {
@@ -62,7 +65,6 @@ fn validate_status(status: &str) -> Result<(), ValidationError> {
 #[serde(rename_all = "camelCase")]
 pub struct MenuBaseRespDto {
     pub id: i32,
-    pub permission_id: Option<i32>,
     pub icon: Option<String>,
     pub icon_type: String,
     pub menu_name: String,
@@ -72,29 +74,36 @@ pub struct MenuBaseRespDto {
     pub route_name: String,
     pub route_path: String,
     pub status: String,
-    pub hide_in_menu: i8,
+    pub hide_in_menu: bool,
     pub i18n_key: String,
     pub component: String,
+    pub layout: String,
 }
 
 impl From<Model> for MenuBaseRespDto {
     fn from(model: Model) -> Self {
-        let meta_data = model.meta.unwrap();
+        // Assuming `meta_data` is an Option<HashMap<String, Value>> or similar.
+        let meta_data = model.meta.unwrap_or_default();
+
         MenuBaseRespDto {
             id: model.id,
-            permission_id: Some(model.permission_id.unwrap_or(0)), // 处理 Option<i32> 到 i32 的转换
-            menu_name: model.menu_name, // 注意这里是直接将 Option<String> 转换为 Option<String>
-            icon_type: meta_data.get("icon_type").unwrap().as_str().unwrap_or("").to_string() ,
-            icon:  Some(meta_data["icon"].as_str().unwrap_or("").to_string()),
-            route_path: model.route_path, // 同样是将 Option<String> 转换为 Option<String>
-            route_name: model.route_name, // 同上
-            parent_id: model.parent_id.unwrap_or(0), // 直接复制 Option<i32>
-            menu_type: model.r#type.to_string(), // 处理 Option<i8> 到 i8 的转换
+            menu_name: model.menu_name,
+            icon_type: meta_data.get("icon_type").map_or_else(|| "".to_string(), |v| v.as_str().unwrap_or("").to_string()),
+            icon:  meta_data.get("icon").map(|v| v.as_str().unwrap_or("").to_string()),
+            route_path: model.route_path,
+            route_name: model.route_name,
+            parent_id: model.parent_id.unwrap_or(0),
+            menu_type: model.r#type.to_string(),
             status: model.status.to_string(),
-            hide_in_menu: model.is_hidden,
-            order: model.sort, // 处理 Option<i8> 到 i8 的转换
-            i18n_key: meta_data.get("i18nKey").unwrap().as_str().unwrap_or("").to_string(),
+            hide_in_menu: model.is_hidden == 1,
+            order: model.sort,
+            i18n_key: meta_data.get("i18nKey")
+                .map_or_else(|| "".to_string(), |v| v.as_str()
+                    .unwrap_or("").to_string()),
             component: model.component.unwrap(),
+            layout: meta_data.get("layout")
+                .map_or_else(|| "base".to_string(), |v| v.as_str()
+                    .unwrap_or("").to_string()),
         }
     }
 }
@@ -103,7 +112,6 @@ impl Default for MenuBaseRespDto {
     fn default() -> Self {
         MenuBaseRespDto {
             id: 0,
-            permission_id: None,
             menu_name: "".to_string(),
             icon_type: "".to_string(),
             icon: None,
@@ -112,10 +120,11 @@ impl Default for MenuBaseRespDto {
             parent_id: 0,
             menu_type: "".to_string(),
             status: "".to_string(),
-            hide_in_menu: 2,
+            hide_in_menu: false,
             order: 0,
             i18n_key: "".to_string(),
             component: "".to_string(),
+            layout: "default".to_string(),
         }
     }
 }

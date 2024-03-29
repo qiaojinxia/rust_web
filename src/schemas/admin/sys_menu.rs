@@ -9,13 +9,11 @@ pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
     pub menu_name: String,
-    pub permission_id: Option<i32>,
     pub route_path: String,
     pub route_name: String,
     pub sort: i8,
     pub parent_id: Option<i32>,
     pub redirect: Option<String>,
-    pub guards: Option<i8>,
     pub r#type: i8,
     pub component: Option<String>,
     pub meta: Option<Json>,
@@ -37,19 +35,22 @@ pub enum Relation {
         on_delete = "Restrict"
     )]
     SelfRef,
-    #[sea_orm(
-        belongs_to = "super::sys_permission::Entity",
-        from = "Column::PermissionId",
-        to = "super::sys_permission::Column::Id",
-        on_update = "Restrict",
-        on_delete = "Restrict"
-    )]
-    SysPermission,
+    #[sea_orm(has_many = "super::sys_menu_permission::Entity")]
+    SysMenuPermission,
+}
+
+impl Related<super::sys_menu_permission::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::SysMenuPermission.def()
+    }
 }
 
 impl Related<super::sys_permission::Entity> for Entity {
     fn to() -> RelationDef {
-        Relation::SysPermission.def()
+        super::sys_menu_permission::Relation::SysPermission.def()
+    }
+    fn via() -> Option<RelationDef> {
+        Some(super::sys_menu_permission::Relation::SysMenu.def().rev())
     }
 }
 

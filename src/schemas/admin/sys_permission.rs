@@ -19,21 +19,42 @@ pub struct Model {
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]
 pub enum Relation {
-    #[sea_orm(has_many = "super::sys_menu::Entity")]
-    SysMenu,
+    #[sea_orm(has_many = "super::sys_menu_permission::Entity")]
+    SysMenuPermission,
+    #[sea_orm(has_many = "super::sys_permission_action::Entity")]
+    SysPermissionAction,
     #[sea_orm(has_many = "super::sys_role_permission::Entity")]
     SysRolePermission,
 }
 
-impl Related<super::sys_menu::Entity> for Entity {
+impl Related<super::sys_menu_permission::Entity> for Entity {
     fn to() -> RelationDef {
-        Relation::SysMenu.def()
+        Relation::SysMenuPermission.def()
+    }
+}
+
+impl Related<super::sys_permission_action::Entity> for Entity {
+    fn to() -> RelationDef {
+        Relation::SysPermissionAction.def()
     }
 }
 
 impl Related<super::sys_role_permission::Entity> for Entity {
     fn to() -> RelationDef {
         Relation::SysRolePermission.def()
+    }
+}
+
+impl Related<super::sys_menu::Entity> for Entity {
+    fn to() -> RelationDef {
+        super::sys_menu_permission::Relation::SysMenu.def()
+    }
+    fn via() -> Option<RelationDef> {
+        Some(
+            super::sys_menu_permission::Relation::SysPermission
+                .def()
+                .rev(),
+        )
     }
 }
 

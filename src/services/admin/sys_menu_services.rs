@@ -20,19 +20,22 @@ pub async fn create_menu(
         ok_or(MyError::ValidationError("menu_name is required".to_string()))?;
     let route_path = menu_create_req.route_path.
         ok_or(MyError::ValidationError("route_path is required".to_string()))?;
-
+    let parent_id = match menu_create_req.parent_id {
+        0 => None,
+        id => Some(id),
+    };
     let mut menu = sys_menu::ActiveModel {
         menu_name: Set(menu_name),
         r#type: Set(menu_create_req.menu_type.parse::<i8>().unwrap()),
         route_path: Set(route_path),
         route_name: Set(menu_create_req.route_name),
-        parent_id: Set(menu_create_req.parent_id),
+        parent_id: Set(parent_id),
         create_user: Set(create_user),
         status: Set(menu_create_req.status.parse::<i8>().unwrap()),
-        is_hidden: Set(menu_create_req.is_hidden as i8),
+        is_hidden: Set(i8::from(menu_create_req.is_hidden)),
         create_time: Set(Some(Utc::now())),
-        permission_id: Set(menu_create_req.permission_id),
         sort: Set(menu_create_req.order),
+        component: Set(Some(menu_create_req.component)),
         ..Default::default()
     };
 
@@ -46,6 +49,13 @@ pub async fn create_menu(
     if let Some(i18n_key) = menu_create_req.i18n_key {
         meta_obj.insert("i18n_key".to_string(), json!(i18n_key));
     }
+
+    if let Some(layout) = menu_create_req.layout {
+        meta_obj.insert("layout".to_string(), json!(layout));
+    }else{
+        meta_obj.insert("layout".to_string(), json!("base".to_string()));
+    }
+
 
     menu.meta = Set(Some(meta));
 
@@ -106,9 +116,11 @@ pub async fn update_menu(
     //
     // menu.r#type = Set(menu_update_req.base.menu_type);
 
-    if let Some(pid) = menu_update_req.base.parent_id {
-        menu.parent_id = Set(Some(pid));
-    }
+    let parent_id = match menu_update_req.base.parent_id {
+        0 => None,
+        id => Some(id),
+    };
+    menu.parent_id = Set(parent_id);
 
     menu.update(db).await.map(Some)
 }

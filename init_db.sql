@@ -4,17 +4,19 @@ CREATE TABLE sys_user (
                           id INT AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
                           user_name VARCHAR(64) NOT NULL UNIQUE COMMENT '用户名',
                           nick_name VARCHAR(64) NOT NULL  COMMENT '昵称',
-                          password VARCHAR(256) NOT NULL COMMENT '密码', -- 密码长度增加以存储hash值
-                          email VARCHAR(128) NOT NULL UNIQUE COMMENT '邮箱', -- 增加长度并添加唯一约束
-                          gender ENUM('M', 'F', 'O') NOT NULL COMMENT '性别', -- 使用ENUM类型表示性别
-                          mobile VARCHAR(15) UNIQUE COMMENT '手机号码', -- 手机号码长度增加
+                          password VARCHAR(256) NOT NULL COMMENT '密码',
+                          email VARCHAR(128) NOT NULL UNIQUE COMMENT '邮箱',
+                          gender ENUM('M', 'F', 'O') NOT NULL COMMENT '性别',
+                          mobile VARCHAR(15) UNIQUE COMMENT '手机号码',
                           avatar VARCHAR(256) COMMENT '头像',
                           create_user VARCHAR(64) NOT NULL COMMENT '创建者',
                           create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
                           update_user VARCHAR(64)  COMMENT '更新者',
                           update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
                           last_login TIMESTAMP COMMENT '上次登录时间',
-                          status_ TINYINT(1) NOT NULL DEFAULT 1 COMMENT '用户状态 1(enable)/2(disabled)'
+                          status_ TINYINT(1) NOT NULL DEFAULT 1 COMMENT '用户状态 1(enable)/2(disabled)',
+                          INDEX idx_user_name (user_name),
+                          INDEX idx_mobile (mobile)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- 角色表
@@ -41,22 +43,23 @@ CREATE TABLE sys_permission (
                                 create_user VARCHAR(64) NOT NULL COMMENT '创建者',
                                 create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
                                 update_user VARCHAR(64) COMMENT '更新者',
-                                update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+                                update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+                                INDEX idx_permission_code (permission_code)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
--- 菜单表
+
+-- 删除sys_menu表如果存在
 DROP TABLE IF EXISTS sys_menu;
+-- 创建sys_menu表，并在创建时添加索引
 CREATE TABLE sys_menu (
                           id INT AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
                           menu_name VARCHAR(64) NOT NULL COMMENT '菜单名称',
-                          permission_id INT COMMENT '关联的权限ID', -- 考虑添加外键约束，前提是已经有相应的权限表
                           route_path VARCHAR(255) NOT NULL COMMENT '路由路径',
                           route_name VARCHAR(255) NOT NULL COMMENT '路由名称',
-                          sort TINYINT NOT NULL DEFAULT 0 COMMENT '菜单排序', -- 不允许NULL，提供默认排序值
-                          parent_id INT DEFAULT NULL COMMENT '父菜单ID', -- 考虑添加外键约束，以自引用此表
+                          sort TINYINT NOT NULL DEFAULT 0 COMMENT '菜单排序',
+                          parent_id INT DEFAULT NULL COMMENT '父菜单ID',
                           redirect VARCHAR(255) COMMENT '重定向地址',
-                          guards TINYINT COMMENT '权限守卫', -- 确保与应用逻辑匹配，如果有枚举值，考虑使用ENUM
-                          type TINYINT NOT NULL DEFAULT 0 COMMENT '菜单类型', -- 提供默认值，确保字段非NULL
+                          type TINYINT NOT NULL DEFAULT 0 COMMENT '菜单类型',
                           component VARCHAR(255) COMMENT '组件路径',
                           meta JSON COMMENT '元数据（包含样式、图标、附加权限、附加参数等）',
                           create_user VARCHAR(64) NOT NULL COMMENT '创建者',
@@ -64,7 +67,35 @@ CREATE TABLE sys_menu (
                           update_user VARCHAR(64) COMMENT '更新者',
                           update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
                           is_hidden TINYINT(1) NOT NULL DEFAULT 1 COMMENT '是否隐藏',
-                          status TINYINT(1) NOT NULL DEFAULT 0 COMMENT '菜单状态 1(enable)/2(disabled)'
+                          status TINYINT(1) NOT NULL DEFAULT 0 COMMENT '菜单状态 1(enable)/2(disabled)',
+                          FOREIGN KEY (parent_id) REFERENCES sys_menu(id),
+                          INDEX idx_menu_name (menu_name),
+                          INDEX idx_parent_id (parent_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+
+
+-- 权限操作表
+DROP TABLE IF EXISTS sys_permission_action;
+CREATE TABLE sys_permission_action (
+                                       id INT AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
+                                       permission_id INT NOT NULL COMMENT '权限ID',
+                                       action_code ENUM('CREATE', 'READ', 'UPDATE', 'DELETE') NOT NULL COMMENT '操作权限代码',
+                                       FOREIGN KEY (permission_id) REFERENCES sys_permission(id),
+                                       INDEX idx_permission_id (permission_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+
+
+DROP TABLE IF EXISTS sys_menu_permission;
+CREATE TABLE sys_menu_permission (
+                                     menu_id INT NOT NULL,
+                                     permission_id INT NOT NULL,
+                                     PRIMARY KEY (menu_id, permission_id),
+                                     INDEX idx_menu_id (menu_id),
+                                     INDEX idx_permission_id (permission_id),
+                                     FOREIGN KEY (menu_id) REFERENCES sys_menu(id),
+                                     FOREIGN KEY (permission_id) REFERENCES sys_permission(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
@@ -77,11 +108,15 @@ CREATE TABLE sys_user_role (
                                role_id INT NOT NULL COMMENT '角色ID',
                                create_user VARCHAR(64) NOT NULL COMMENT '创建者',
                                create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-                               update_user VARCHAR(64)  COMMENT '更新者',
+                               update_user VARCHAR(64) COMMENT '更新者',
                                update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
                                FOREIGN KEY (user_id) REFERENCES sys_user(id),
-                               FOREIGN KEY (role_id) REFERENCES sys_role(id)
+                               FOREIGN KEY (role_id) REFERENCES sys_role(id),
+                               INDEX idx_user_id (user_id),
+                               INDEX idx_role_id (role_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+
 
 -- 角色权限关联表
 DROP TABLE IF EXISTS sys_role_permission;
@@ -94,7 +129,9 @@ CREATE TABLE sys_role_permission (
                                      update_user VARCHAR(64) COMMENT '更新者',
                                      update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
                                      FOREIGN KEY (role_id) REFERENCES sys_role(id),
-                                     FOREIGN KEY (permission_id) REFERENCES sys_permission(id)
+                                     FOREIGN KEY (permission_id) REFERENCES sys_permission(id),
+                                     INDEX idx_role_id (role_id),
+                                     INDEX idx_permission_id (permission_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
@@ -107,30 +144,3 @@ CREATE TABLE sys_role_permission (
 }
 **/
 
-
--- 添加外键约束，关联权限ID
-ALTER TABLE sys_menu ADD CONSTRAINT FK_permission_id FOREIGN KEY (permission_id) REFERENCES sys_permission(id);
-
--- 添加外键约束，关联父菜单ID
-ALTER TABLE sys_menu ADD CONSTRAINT FK_parent_id FOREIGN KEY (parent_id) REFERENCES sys_menu(id);
-
-
--- 用户角色关联表
-ALTER TABLE sys_user_role ADD INDEX idx_user_id (user_id);
-ALTER TABLE sys_user_role ADD INDEX idx_role_id (role_id);
-
--- 角色权限关联表
-ALTER TABLE sys_role_permission ADD INDEX idx_role_id (role_id);
-ALTER TABLE sys_role_permission ADD INDEX idx_permission_id (permission_id);
-
--- 用户表
-ALTER TABLE sys_user ADD INDEX idx_user_name (user_name);
-ALTER TABLE sys_user ADD INDEX idx_mobile (mobile);
-ALTER TABLE sys_user ADD INDEX idx_user_id (id);
-
--- 权限表
-ALTER TABLE sys_permission ADD INDEX idx_permission_code (permission_code);
--- 菜单表
-ALTER TABLE sys_menu ADD INDEX idx_menu_name (menu_name);
-ALTER TABLE sys_menu ADD INDEX idx_parent_id (parent_id);
-ALTER TABLE sys_menu ADD INDEX idx_permission_id (permission_id);

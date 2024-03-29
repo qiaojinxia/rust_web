@@ -69,12 +69,6 @@ pub async fn delete_permission(
     // 开始一个事务
     let txn = db.begin().await?;
 
-    let _ = SysMenu::update_many()
-        .col_expr(sys_menu::Column::PermissionId, Expr::value(None::<i32>))
-        .filter(sys_menu::Column::PermissionId.eq(permission_id))
-        .exec(&txn)
-        .await?;
-
 
     // 接着，更新所有引用该权限ID作为permission_id的sys_role_permission记录，
     // 将它们的permission_id设置为NULL

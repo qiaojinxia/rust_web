@@ -87,10 +87,7 @@ pub async fn get_menus_by_role_id(
             JoinType::InnerJoin,
             sys_role_permission::Relation::SysPermission.def(),
         )
-        .join(
-            JoinType::InnerJoin,
-            sys_permission::Relation::SysMenu.def(),
-        )
+
         .select_only()
         .column_as(sys_menu::Column::Id, "id")
         .column_as(sys_menu::Column::MenuName, "menu_name")

@@ -4,6 +4,18 @@ use sea_orm::entity::prelude::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
+#[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "action_code")]
+pub enum ActionCode {
+    #[sea_orm(string_value = "CREATE")]
+    Create,
+    #[sea_orm(string_value = "READ")]
+    Read,
+    #[sea_orm(string_value = "UPDATE")]
+    Update,
+    #[sea_orm(string_value = "DELETE")]
+    Delete,
+}
+#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
 #[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "gender")]
 pub enum Gender {
     #[sea_orm(string_value = "M")]
