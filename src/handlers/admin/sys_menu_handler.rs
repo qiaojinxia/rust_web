@@ -54,7 +54,8 @@ pub async fn get_menus(
 ) -> impl Responder {
     let result = sys_menu_services::get_menus(&*app_state.mysql_conn).await
         .map(|menus| {
-            menus.into_iter().map(|menu| MenuBaseRespDto::from(menu)).collect::<Vec<MenuBaseRespDto>>()
+            PaginationResponseDto::new(1, 10, menus.len() as u64,
+            menus.into_iter().map(|menu| MenuBaseRespDto::from(menu)).collect::<Vec<MenuBaseRespDto>>())
         })
         .map_err(|error| ApiError::InternalServerError(error.to_string()));
 
