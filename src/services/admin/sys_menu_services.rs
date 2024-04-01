@@ -1,11 +1,11 @@
 use chrono::Utc;
 use sea_orm::{ActiveModelTrait, DatabaseConnection, DbErr, EntityTrait, PaginatorTrait};
 use sea_orm::ActiveValue::Set;
-use sea_orm::prelude::Expr;
-use serde_json::json;
+use sea_orm::prelude::{Expr, Json};
+use serde_json::{json, Value};
 use crate::dto::admin::sys_menu_dto::{MenuCreateDto, MenuUpdateDto};
-use crate::schemas::admin::{sys_menu};
-use crate::schemas::admin::prelude::{SysMenu};
+use crate::schemas::admin::{sys_menu, sys_menu_permission};
+use crate::schemas::admin::prelude::{SysMenu, SysMenuPermission};
 use sea_orm::QueryFilter;
 use sea_orm::ColumnTrait;
 use crate::common::error::MyError;
@@ -95,34 +95,70 @@ pub async fn get_menu_by_id(
     SysMenu::find_by_id(menu_id).one(db).await
 }
 
+
 //update_menu 更新菜单
 pub async fn update_menu(
     db: &DatabaseConnection,
     menu_id:i32,
     menu_update_req:MenuUpdateDto,
 
-) -> Result<Option<sys_menu::Model>, DbErr> {
+) -> Result<Option<sys_menu::Model>, MyError> {
+    let mut menu: sys_menu::ActiveModel =
+        SysMenu::find_by_id(menu_id).one(db).await?.unwrap().into();
 
-    let mut menu: sys_menu::ActiveModel = SysMenu::find_by_id(menu_id).one(db).await?.unwrap().into();
-
-    // menu.menu_name = Set(menu_update_req.base.menu_name);
-    //
-    // if let Some(perm_id) = menu_update_req.base.permission_id {
-    //     menu.permission_id = Set(Some(perm_id));
-    // }
-    // menu.route_path = Set(menu_update_req.base.route_path);
-    //
-    // menu.sort = Set(menu_update_req.base.order);
-    //
-    // menu.r#type = Set(menu_update_req.base.menu_type);
-
-    let parent_id = match menu_update_req.base.parent_id {
-        0 => None,
-        id => Some(id),
-    };
-    menu.parent_id = Set(parent_id);
-
-    menu.update(db).await.map(Some)
+    let mut meta = json!({"": ""});
+    // 记录meta的初始状态
+    let initial_meta = meta.clone();
+    let meta_obj = meta.as_object_mut().
+        ok_or(MyError::ValidationError("Failed to create meta object".to_string()))?;
+    if let Some(icon) = menu_update_req.icon {
+        meta_obj.insert("icon".to_string(), json!(icon));
+    }
+    if let Some(icon_type) = menu_update_req.icon_type {
+        meta_obj.insert("icon_type".to_string(), json!(icon_type));
+    }
+    if let Some(i18n_key) = menu_update_req.i18n_key {
+        meta_obj.insert("i18n_key".to_string(), json!(i18n_key));
+    }
+    if let Some(layout) = menu_update_req.layout {
+        meta_obj.insert("layout".to_string(), json!(layout));
+    }
+    if let Some(menu_name) = menu_update_req.menu_name {
+        menu.menu_name = Set(menu_name);
+    }
+    if let Some(component) = menu_update_req.component {
+        menu.component = Set(Some(component));
+    }
+    if let Some(menu_type) = menu_update_req.menu_type {
+        menu.r#type = Set(menu_type.parse().unwrap_or_default()); // 需要转换为期望的数据类型
+    }
+    if let Some(route_name) = menu_update_req.route_name {
+        menu.route_name = Set(route_name);
+    }
+    if let Some(route_path) = menu_update_req.route_path {
+        menu.route_path = Set(route_path);
+    }
+    menu.parent_id = Set(menu_update_req.parent_id);
+    if let Some(status) = menu_update_req.status {
+        menu.status = Set(status.parse().unwrap_or_default()); // 需要转换为期望的数据类型
+    }
+    if let Some(is_hidden) = menu_update_req.is_hidden {
+        menu.is_hidden = Set(is_hidden as i8); // 根据需要转换布尔值
+    }
+    if let Some(order) = menu_update_req.order {
+        menu.sort = Set(order);
+    }
+    if let Some(id) = menu_update_req.parent_id {
+        if id != 0 {
+            menu.parent_id = Set(Some(id));
+        } else {
+            menu.parent_id = Set(None); // or whatever logic you want when id is 0
+        }
+    }
+    if meta != initial_meta {
+        menu.meta = Set(Some(meta));
+    }
+    menu.update(db).await.map(Some).map_err(MyError::from)
 }
 
 //delete_menu 删除菜单
@@ -138,13 +174,49 @@ pub async fn delete_menu(
         .exec(db)
         .await?;
 
+    let _ = SysMenuPermission::update_many()
+        .col_expr(sys_menu_permission::Column::MenuId, Expr::value(None::<i32>))
+        .filter(sys_menu_permission::Column::MenuId.eq(menu_id)).exec(db)
+        .await?;
+
     // 然后，尝试删除目标菜单项
     let menu = sys_menu::ActiveModel {
         id: Set(menu_id),
         ..Default::default()
     };
+
     SysMenu::delete(menu)
         .exec(db)
         .await
         .map(|res| res.rows_affected)
+}
+
+pub async fn delete_menus(
+    db: &DatabaseConnection,
+    menu_ids: Vec<i32>,
+) -> Result<u64, DbErr> {
+    // 步骤1: 删除与这些菜单ID关联的所有权限记录
+    let delete_permissions_result = SysMenuPermission::delete_many()
+        .filter(sys_menu_permission::Column::MenuId.is_in(menu_ids.clone()))
+        .exec(db)
+        .await?;
+    let permissions_deleted = delete_permissions_result.rows_affected;
+
+    // 步骤2: 更新所有引用这些菜单ID作为parent_id的子菜单
+    let update_children_result = SysMenu::update_many()
+        .col_expr(sys_menu::Column::ParentId, Expr::value(None::<i32>))
+        .filter(sys_menu::Column::ParentId.is_in(menu_ids.clone()))
+        .exec(db)
+        .await?;
+    let children_updated = update_children_result.rows_affected;
+
+    // 步骤3: 删除这些菜单项
+    let delete_menus_result = SysMenu::delete_many()
+        .filter(sys_menu::Column::Id.is_in(menu_ids))
+        .exec(db)
+        .await?;
+    let menus_deleted = delete_menus_result.rows_affected;
+
+    // 返回总共影响的行数
+    Ok(permissions_deleted + children_updated + menus_deleted)
 }

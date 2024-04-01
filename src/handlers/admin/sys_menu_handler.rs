@@ -114,6 +114,20 @@ pub async fn delete_menu(
     create_response!(result)
 }
 
+#[delete("/menus/")]
+pub async fn delete_menus(
+    app_state: web::Data<globals::AppState>,
+    menu_ids: web::Json<Vec<i32>>,
+) -> impl Responder {
+    let menu_ids = menu_ids.into_inner();
+    let result = sys_menu_services::delete_menus(
+        &*app_state.mysql_conn, menu_ids).await
+        .map(|success| MenuDeleteResponseDto { success:success != 0 })
+        .map_err(|error| ApiError::InternalServerError(error.to_string()));
+
+    create_response!(result)
+}
+
 pub fn api_config(cfg: &mut web::ServiceConfig) {
     cfg
         .service(create_menu)

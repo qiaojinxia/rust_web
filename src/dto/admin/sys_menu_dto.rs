@@ -153,8 +153,47 @@ pub struct MenuDto {
 
 #[derive(Debug, Serialize, Deserialize, Validate)]
 pub struct MenuUpdateDto {
-    #[serde(flatten)]
-    pub base: MenuCreateDto,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[validate(length(min = 1, max = 64))]
+    pub icon: Option<String>,
+
+    #[serde(rename = "iconType")]
+    pub icon_type: Option<String>,
+
+    #[serde(rename = "menuName", skip_serializing_if = "Option::is_none")]
+    #[validate(length(min = 1, max = 64))]
+    pub menu_name: Option<String>,
+
+    #[serde(rename = "menuType")]
+    pub menu_type: Option<String>,
+
+    #[serde(rename = "routeName")]
+    #[validate(length(min = 1, max = 256))]
+    pub route_name: Option<String>,
+
+    #[serde(rename = "routePath", skip_serializing_if = "Option::is_none")]
+    #[validate(length(min = 1, max = 256))]
+    pub route_path: Option<String>,
+
+    #[serde(rename = "parentId")]
+    pub parent_id: Option<i32>,
+
+    #[serde(rename = "status")]
+    // #[validate(custom = "validate_status")]
+    pub status: Option<String>,
+
+    pub component: Option<String>,
+
+    #[serde(rename = "hideInMenu")]
+    pub is_hidden: Option<bool>,
+
+    #[serde(rename = "order")]
+    pub order: Option<i8>,
+
+    #[serde(rename = "i18nKey", skip_serializing_if = "Option::is_none")]
+    pub i18n_key: Option<String>,
+
+    pub layout: Option<String>,
 }
 
 
