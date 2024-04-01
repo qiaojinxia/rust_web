@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use actix_web::{get, post, Responder, web};
 use sea_orm::{DbErr};
 use crate::common::auth::crypto::verify_password;
@@ -12,6 +13,7 @@ use config::globals;
 use actix_session::{Session};
 use crate::dto::admin::sys_auth_dto::{SysLoginDto, SysLoginRespDto};
 use actix_web::ResponseError;
+use serde::{Deserialize, Serialize};
 
 // 用户登录
 #[post("/login")]
@@ -27,12 +29,13 @@ pub async fn login(
                 &*app_state.mysql_conn, sys_login_dto.user_name.clone()).await.unwrap();
             // 验证用户是否存在
             let user = user_opt.ok_or(DbErr::Custom("Invalid username or password".to_string())).unwrap();
+
             // 验证密码
             if verify_password(&sys_login_dto.password.clone().unwrap(), &user.password).unwrap() {
                 // 生成JWT
                 let token = generate_jwt(user.user_name.clone(), vec!["user".to_string()]).unwrap(); // 假设这是一个外部函数，用于生成JWT
 
-                rs = Ok(SysLoginRespDto { user_name: user.user_name, token });
+                rs = Ok(SysLoginRespDto { user_name: user.user_name, token, refresh_token:"xxx".to_string() });
             }else{
                 rs = Err(ApiError::InternalServerError("Invalid username or password".to_string()));
             }
@@ -42,6 +45,31 @@ pub async fn login(
         },
     }
     create_response!(rs)
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct User {
+    id: String,
+    name: String,
+    buttons: Vec<String>,
+    roles: Vec<String>,
+}
+
+#[get("/get-user-info")]
+async fn user_info() -> impl Responder {
+
+    // 创建User结构体实例并插入到HashMap中
+    let user1 = User {
+        id: "0".to_string(),
+        name: "Soybean".to_string(),
+        buttons: vec!["B_CODE1".to_string(), "B_CODE2".to_string(), "B_CODE3".to_string()],
+        roles: vec!["R_SUPER".to_string()],
+    };
+
+    let rs: Result<ApiResponse<User>, ApiError> = Ok(ApiResponse::success(user1));
+
+    create_response!(rs)
+
 }
 
 

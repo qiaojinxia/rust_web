@@ -41,8 +41,8 @@ pub async fn get_menus_paged(
     let result = sys_menu_services::get_menus_paged(
         &*app_state.mysql_conn, current, page_size).await
         .map(|(menus, total_menus)| {
-            PaginationResponseDto::new(current, page_size, total_menus,
-                                       menus.into_iter().map(|menu| MenuBaseRespDto::from(menu)).collect::<Vec<MenuBaseRespDto>>())
+            PaginationResponseDto::new(current, page_size, total_menus, menus.into_iter()
+                .map(|menu| MenuBaseRespDto::from(menu)).collect::<Vec<MenuBaseRespDto>>())
         })
         .map_err(|error| ApiError::InternalServerError(error.to_string()));
     create_response!(result)
@@ -68,7 +68,8 @@ pub async fn get_menu_by_id(
     path: web::Path<i32>,
 ) -> impl Responder {
     let menu_id = path.into_inner();
-    let result = sys_menu_services::get_menu_by_id(&*app_state.mysql_conn, menu_id).await
+    let result = sys_menu_services::get_menu_by_id(
+        &*app_state.mysql_conn, menu_id).await
         .map(|menu| MenuBaseRespDto::from(menu.unwrap()))
         .map_err(|error| ApiError::NotFound(error.to_string()));
 
@@ -83,7 +84,8 @@ pub async fn update_menu(
 ) -> impl Responder {
     let menu_id = path.into_inner();
     if let Err(errors) = menu_update_dto.validate() {
-        return create_response!(Err::<MenuUpdateResponseDto, ApiError>(ApiError::InvalidArgument(errors.to_string())));
+        return create_response!(Err::<MenuUpdateResponseDto, ApiError>
+            (ApiError::InvalidArgument(errors.to_string())));
     }
 
     let result = sys_menu_services::update_menu(
@@ -104,7 +106,8 @@ pub async fn delete_menu(
     path: web::Path<i32>,
 ) -> impl Responder {
     let menu_id = path.into_inner();
-    let result = sys_menu_services::delete_menu(&*app_state.mysql_conn, menu_id).await
+    let result = sys_menu_services::delete_menu(
+        &*app_state.mysql_conn, menu_id).await
         .map(|success| MenuDeleteResponseDto { success:success != 0 })
         .map_err(|error| ApiError::InternalServerError(error.to_string()));
 

@@ -1,5 +1,6 @@
 // tests/jwt_integration_test.rs
 
+use my_gpt::common::auth;
 use my_gpt::common::auth::jwt;
 #[test]
 fn test_jwt_integration() {
@@ -30,4 +31,11 @@ fn test_encryption_decryption() {
     // 验证解密后的数据是否与原始数据相同
     assert_eq!(claims.user_name, decrypted_claims.user_name, "Decrypted data does not match original");
     assert_eq!(claims.role_codes, decrypted_claims.role_codes, "Decrypted data does not match original");
+}
+
+#[test]
+fn test_password_encryption() {
+    let password_hash =
+        auth::crypto::hash_password(Some("12345678".to_string())).unwrap(); // 假设这是一个外部函数，用于安全地散列密码
+    println!("{}",password_hash)
 }

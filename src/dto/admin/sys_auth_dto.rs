@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 
 
 #[derive(Debug, Serialize, Deserialize, Validate)]
+#[serde(rename_all = "camelCase")]
 pub struct SysLoginDto {
     #[validate(length(min = 1, max = 255))]
     pub user_name: Option<String>,
@@ -14,9 +15,11 @@ pub struct SysLoginDto {
 
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct SysLoginRespDto {
     pub user_name: String,
     pub token: String,
+    pub refresh_token: String,
 }
 
 
