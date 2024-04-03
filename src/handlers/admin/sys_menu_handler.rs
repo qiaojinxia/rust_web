@@ -5,6 +5,7 @@ use crate::common::resp::{ApiResponse, ApiError};
 use crate::config::globals;
 use crate::create_response;
 use actix_web::ResponseError;
+use actix_web::web::service;
 use crate::dto::admin::common_dto::{PaginationQueryDto, PaginationResponseDto};
 // 假设您已经定义了一个宏来简化响应的创建
 use crate::dto::admin::sys_menu_dto::{MenuCreateDto, MenuUpdateDto,
@@ -114,7 +115,7 @@ pub async fn delete_menu(
     create_response!(result)
 }
 
-#[delete("/menus/")]
+#[delete("/menus")]
 pub async fn delete_menus(
     app_state: web::Data<globals::AppState>,
     menu_ids: web::Json<Vec<i32>>,
@@ -135,5 +136,6 @@ pub fn api_config(cfg: &mut web::ServiceConfig) {
         .service(get_menus_paged)
         .service(get_menu_by_id)
         .service(update_menu)
-        .service(delete_menu);
+        .service(delete_menu)
+        .service(delete_menus);
 }
