@@ -5,13 +5,12 @@ use crate::common::resp::{ApiResponse, ApiError};
 use crate::config::globals;
 use crate::create_response;
 use actix_web::ResponseError;
-use actix_web::web::service;
 use crate::dto::admin::common_dto::{PaginationQueryDto, PaginationResponseDto};
 // 假设您已经定义了一个宏来简化响应的创建
-use crate::dto::admin::sys_menu_dto::{MenuCreateDto, MenuUpdateDto,
-                                      MenuCreationResponseDto,
-                                      MenuUpdateResponseDto, MenuDeleteResponseDto,
-                                      MenuBaseRespDto};
+use crate::dto::admin::sys_menu_dto::{MenuCreateDto, MenuUpdateDto, MenuCreationResponseDto,
+                                      MenuUpdateResponseDto, MenuDeleteResponseDto, MenuBaseRespDto};
+use crate::services::admin::sys_menu_services::build_menu_tree;
+
 #[post("/menus")]
 pub async fn create_menu(
     app_state: web::Data<globals::AppState>,
@@ -30,6 +29,20 @@ pub async fn create_menu(
 
     create_response!(result)
 }
+
+#[get("/menus/tree")]
+pub async fn get_menus_tree(
+    app_state: web::Data<globals::AppState>,
+) -> impl Responder {
+    let result = sys_menu_services::get_menus(&*app_state.mysql_conn).await
+        .map(|menu_tree| build_menu_tree(menu_tree)) // Directly return the tree structure
+        .map_err(|error| {
+            ApiError::InternalServerError(error.to_string())
+        });
+
+    create_response!(result)
+}
+
 
 #[get("/menus/paged")]
 pub async fn get_menus_paged(
@@ -134,6 +147,7 @@ pub fn api_config(cfg: &mut web::ServiceConfig) {
         .service(create_menu)
         .service(get_menus)
         .service(get_menus_paged)
+        .service(get_menus_tree)
         .service(get_menu_by_id)
         .service(update_menu)
         .service(delete_menu)

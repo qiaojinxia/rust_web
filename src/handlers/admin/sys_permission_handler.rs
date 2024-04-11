@@ -3,11 +3,12 @@ use crate::common::resp::ApiError;
 use crate::config::globals;
 use crate::create_response;
 use crate::dto::admin::sys_permission_dto::{PermissionCreationDto, PermissionCreationRespDto,
-                                            PermissionDeleteRespDto, PermissionDto, PermissionRespDto,
-                                            PermissionsRespDto, PermissionUpdateDto, PermissionUpdateRespDto};
+                                            PermissionDeleteRespDto, PermissionDto, PermissionMenuDto,
+                                            PermissionRespDto, PermissionUpdateDto, PermissionUpdateRespDto};
 use crate::services::admin::sys_permission_services;
 use crate::common::resp::ApiResponse;
 use actix_web::ResponseError;
+use crate::dto::admin::common_dto::{PaginationQueryDto, PaginationResponseDto};
 
 
 // Create a new permission
@@ -35,18 +36,21 @@ async fn create_permission(
 #[get("/permissions")]
 async fn get_permissions(
     app_state: web::Data<globals::AppState>,
+    web::Query(info): web::Query<PaginationQueryDto>,
 ) -> impl Responder {
-    let result = sys_permission_services::get_permissions(
-        &*app_state.mysql_conn).await.map(|permissions| permissions.iter()
-            .map(|permission| PermissionDto::from(permission.clone())) // 在这里进行解引用
-            .collect::<Vec<PermissionDto>>()).map(|permissions|PermissionsRespDto{
-            base:permissions,
-    })
+    let current = info.current.unwrap_or(1);
+    let page_size = info.size.unwrap_or(10);
+    let result =
+        sys_permission_services::get_permissions_with_menus(
+        &*app_state.mysql_conn, current as usize, page_size as usize).await
+        .map(|(permissions, total)| {
+            PaginationResponseDto::new(current, page_size, total as u64, permissions.into_iter()
+                .map(|permission| PermissionMenuDto::from(permission)).collect::<Vec<PermissionMenuDto>>())
+        })
         .map_err(|error| ApiError::InternalServerError(error.to_string()));
 
     create_response!(result)
 }
-
 
 // Get a single permission by ID
 #[get("/permissions/{id}")]
@@ -83,7 +87,8 @@ async fn update_permission(
         "admin".to_string(),
     ).await
         .map(|permission| PermissionUpdateRespDto{
-            base:PermissionDto::from(permission.unwrap())
+            base:None
+            // base:PermissionDto::from(permission.unwrap())
         })
         .map_err(|error| ApiError::InternalServerError(error.to_string()));
 

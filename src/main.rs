@@ -9,7 +9,7 @@ use actix_session::config::PersistentSession;
 use signal_hook::consts::signal::{SIGINT, SIGTERM};
 use signal_hook::iterator::Signals;
 use tokio::sync::oneshot;
-use my_gpt::{app, middleware, handlers};
+use my_gpt::{app, handlers};
 use my_gpt::config::globals;
 use actix_web::middleware::Logger;
 use time::Duration;

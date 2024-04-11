@@ -1,13 +1,18 @@
+use std::cell::RefCell;
+use std::collections::HashMap;
+use std::rc::{Rc, Weak};
+use actix_service::ServiceFactoryExt;
 use chrono::Utc;
 use sea_orm::{ActiveModelTrait, DatabaseConnection, DbErr, EntityTrait, PaginatorTrait};
 use sea_orm::ActiveValue::Set;
-use sea_orm::prelude::{Expr, Json};
-use serde_json::{json, Value};
-use crate::dto::admin::sys_menu_dto::{MenuCreateDto, MenuUpdateDto};
+use sea_orm::prelude::{Expr};
+use serde_json::{json};
+use crate::dto::admin::sys_menu_dto::{MenuCreateDto, MenuTreeResponseDto, MenuUpdateDto};
 use crate::schemas::admin::{sys_menu, sys_menu_permission};
 use crate::schemas::admin::prelude::{SysMenu, SysMenuPermission};
 use sea_orm::QueryFilter;
 use sea_orm::ColumnTrait;
+use serde::Deserialize;
 use crate::common::error::MyError;
 
 //create_menu 创建菜单
@@ -94,6 +99,7 @@ pub async fn get_menu_by_id(
 ) -> Result<Option<sys_menu::Model>, DbErr> {
     SysMenu::find_by_id(menu_id).one(db).await
 }
+
 
 
 //update_menu 更新菜单
@@ -219,4 +225,73 @@ pub async fn delete_menus(
 
     // 返回总共影响的行数
     Ok(permissions_deleted + children_updated + menus_deleted)
+}
+
+
+#[derive( Clone, Deserialize)]
+pub struct MenuTree {
+    pub id: i32,
+    #[serde(rename = "pId")]
+    pub parent_id: Option<Weak<RefCell<MenuTree>>>,
+    pub label: String,
+    pub children: Option<RefCell<Vec<Rc<RefCell<MenuTree>>>>>,
+}
+impl MenuTree {
+    // 添加一个方法来转换为可序列化的结构体
+    fn to_serializable(&self) -> MenuTreeResponseDto {
+        MenuTreeResponseDto {
+            id: self.id,
+            label: self.label.clone(),
+            children: self.children
+                .as_ref()
+                .map_or(vec![], |children| {
+                    children.borrow().iter().map(|child| {
+                        child.borrow().to_serializable()
+                    }).collect()
+                }),
+        }
+    }
+}
+pub fn build_menu_tree(menus: Vec<sys_menu::Model>) -> Vec<MenuTreeResponseDto> {
+    let mut menu_map: HashMap<i32, Rc<RefCell<MenuTree>>> = HashMap::new();
+    let mut roots: Vec<Rc<RefCell<MenuTree>>> = Vec::new();
+    
+    // 第一步：为每个菜单项创建DTO，并存储在menu_map中
+    for menu in menus.iter() {
+        let menu_tree_dto = Rc::new(RefCell::new(MenuTree {
+            id: menu.id,
+            parent_id: None, // 初始时为None，稍后更新
+            label: menu.menu_name.clone(),
+            children: Some(RefCell::new(Vec::new())),
+        }));
+        menu_map.insert(menu.id, Rc::clone(&menu_tree_dto));
+    }
+
+    // 第二步：建立父子关系并正确设置parent_id
+    for menu in menus.iter() {
+        if let Some(parent_id) = menu.parent_id {
+            if let Some(parent) = menu_map.get(&parent_id) {
+                let child = menu_map.get(&menu.id).unwrap();
+
+                // 设置 child 的 parent_id 为指向 parent 的弱引用
+                child.borrow_mut().parent_id = Some(Rc::downgrade(&parent));
+
+                // 正确处理 Option，添加 child 到 parent 的 children 中
+                if let Some(children) = parent.borrow_mut().children.as_mut() {
+                    children.borrow_mut().push(Rc::clone(&child));
+                } else {
+                    // 如果 children 是 None，可以在这里初始化它
+                    let mut new_children = Vec::new();
+                    new_children.push(Rc::clone(&child));
+                    parent.borrow_mut().children = Some(RefCell::new(new_children));
+                }
+            }
+        } else {
+            // 如果没有 parent_id，则为根节点
+            roots.push(menu_map.get(&menu.id).unwrap().clone());
+        }
+    }
+    roots.into_iter().map(|tree_rc| {
+        tree_rc.borrow().to_serializable()
+    }).collect()
 }

@@ -15,12 +15,6 @@ pub struct PermissionCreationRespDto{
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct PermissionsRespDto{
-    pub base: Vec<PermissionDto>,
-}
-
-
-#[derive(Debug, Serialize, Deserialize)]
 pub struct PermissionRespDto {
     #[serde(flatten)]
     pub base: PermissionDto,
@@ -36,7 +30,7 @@ pub struct PermissionUpdateDto {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PermissionUpdateRespDto {
     #[serde(flatten)]
-    pub base: PermissionDto,
+    pub base: Option<PermissionMenuDto>,
 }
 
 
@@ -65,3 +59,13 @@ impl From<Model> for PermissionDto {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PermissionMenuDto {
+    pub permission_id: i32,
+    pub permission_code: String,
+    pub description: String,
+    pub actions: Vec<String>, // Assuming action codes can be split into Vec<String>
+    pub menu_name: String,
+    pub menu_id: i32,
+    pub menu_status: String,
+}

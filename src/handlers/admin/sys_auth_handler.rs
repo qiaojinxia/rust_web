@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use actix_web::{get, post, Responder, web};
 use sea_orm::{DbErr};
 use crate::common::auth::crypto::verify_password;

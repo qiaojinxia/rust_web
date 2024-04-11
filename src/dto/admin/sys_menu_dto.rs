@@ -1,4 +1,5 @@
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
+use serde::ser::SerializeStruct;
 use validator::{Validate, ValidationError};
 use crate::schemas::admin::sys_menu::Model;
 
@@ -207,3 +208,13 @@ pub struct MenuUpdateResponseDto {
 pub struct MenuDeleteResponseDto {
     pub success: bool,
 }
+
+
+// 定义一个用于序列化的简化版本的结构体
+#[derive(Debug, Serialize, Deserialize)]
+pub struct MenuTreeResponseDto {
+    pub id: i32,
+    pub label: String,
+    pub children: Vec<MenuTreeResponseDto>,
+}
+
