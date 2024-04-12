@@ -1,19 +1,19 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::{Rc, Weak};
-use actix_service::ServiceFactoryExt;
 use chrono::Utc;
 use sea_orm::{ActiveModelTrait, DatabaseConnection, DbErr, EntityTrait, PaginatorTrait};
 use sea_orm::ActiveValue::Set;
 use sea_orm::prelude::{Expr};
 use serde_json::{json};
 use crate::dto::admin::sys_menu_dto::{MenuCreateDto, MenuTreeResponseDto, MenuUpdateDto};
-use crate::schemas::admin::{sys_menu, sys_menu_permission};
-use crate::schemas::admin::prelude::{SysMenu, SysMenuPermission};
+use crate::schemas::admin::{sys_menu};
+use crate::schemas::admin::prelude::{SysMenu};
 use sea_orm::QueryFilter;
 use sea_orm::ColumnTrait;
 use serde::Deserialize;
 use crate::common::error::MyError;
+use crate::schemas::admin;
 
 //create_menu 创建菜单
 pub async fn create_menu(
@@ -31,7 +31,7 @@ pub async fn create_menu(
     };
     let mut menu = sys_menu::ActiveModel {
         menu_name: Set(menu_name),
-        r#type: Set(menu_create_req.menu_type.parse::<i8>().unwrap()),
+        r#type: Set(admin::sea_orm_active_enums::Type::from_string(menu_create_req.menu_type.as_str())?),
         route_path: Set(route_path),
         route_name: Set(menu_create_req.route_name),
         parent_id: Set(parent_id),
@@ -136,7 +136,7 @@ pub async fn update_menu(
         menu.component = Set(Some(component));
     }
     if let Some(menu_type) = menu_update_req.menu_type {
-        menu.r#type = Set(menu_type.parse().unwrap_or_default()); // 需要转换为期望的数据类型
+        menu.r#type = Set(admin::sea_orm_active_enums::Type::from_string(menu_type.as_str())?); // 需要转换为期望的数据类型
     }
     if let Some(route_name) = menu_update_req.route_name {
         menu.route_name = Set(route_name);
@@ -180,11 +180,6 @@ pub async fn delete_menu(
         .exec(db)
         .await?;
 
-    let _ = SysMenuPermission::update_many()
-        .col_expr(sys_menu_permission::Column::MenuId, Expr::value(None::<i32>))
-        .filter(sys_menu_permission::Column::MenuId.eq(menu_id)).exec(db)
-        .await?;
-
     // 然后，尝试删除目标菜单项
     let menu = sys_menu::ActiveModel {
         id: Set(menu_id),
@@ -201,14 +196,7 @@ pub async fn delete_menus(
     db: &DatabaseConnection,
     menu_ids: Vec<i32>,
 ) -> Result<u64, DbErr> {
-    // 步骤1: 删除与这些菜单ID关联的所有权限记录
-    let delete_permissions_result = SysMenuPermission::delete_many()
-        .filter(sys_menu_permission::Column::MenuId.is_in(menu_ids.clone()))
-        .exec(db)
-        .await?;
-    let permissions_deleted = delete_permissions_result.rows_affected;
-
-    // 步骤2: 更新所有引用这些菜单ID作为parent_id的子菜单
+    // 步骤1: 更新所有引用这些菜单ID作为parent_id的子菜单
     let update_children_result = SysMenu::update_many()
         .col_expr(sys_menu::Column::ParentId, Expr::value(None::<i32>))
         .filter(sys_menu::Column::ParentId.is_in(menu_ids.clone()))
@@ -216,7 +204,7 @@ pub async fn delete_menus(
         .await?;
     let children_updated = update_children_result.rows_affected;
 
-    // 步骤3: 删除这些菜单项
+    // 步骤2: 删除这些菜单项
     let delete_menus_result = SysMenu::delete_many()
         .filter(sys_menu::Column::Id.is_in(menu_ids))
         .exec(db)
@@ -224,7 +212,7 @@ pub async fn delete_menus(
     let menus_deleted = delete_menus_result.rows_affected;
 
     // 返回总共影响的行数
-    Ok(permissions_deleted + children_updated + menus_deleted)
+    Ok(children_updated + menus_deleted)
 }
 
 

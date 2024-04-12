@@ -16,6 +16,18 @@ pub enum ActionCode {
     Delete,
 }
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
+#[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "api_method")]
+pub enum ApiMethod {
+    #[sea_orm(string_value = "GET")]
+    Get,
+    #[sea_orm(string_value = "POST")]
+    Post,
+    #[sea_orm(string_value = "PUT")]
+    Put,
+    #[sea_orm(string_value = "DELETE")]
+    Delete,
+}
+#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
 #[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "gender")]
 pub enum Gender {
     #[sea_orm(string_value = "M")]
@@ -24,4 +36,22 @@ pub enum Gender {
     F,
     #[sea_orm(string_value = "O")]
     O,
+}
+#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
+#[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "target_type")]
+pub enum TargetType {
+    #[sea_orm(string_value = "MENU")]
+    Menu,
+    #[sea_orm(string_value = "API_GROUP")]
+    ApiGroup,
+}
+#[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
+#[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "type")]
+pub enum Type {
+    #[sea_orm(string_value = "DIRECTORY")]
+    Directory,
+    #[sea_orm(string_value = "MENU")]
+    Menu,
+    #[sea_orm(string_value = "BUTTON")]
+    Button,
 }

@@ -2,7 +2,7 @@ use chrono::Utc;
 use sea_orm::{ActiveModelTrait, ConnectionTrait, DatabaseConnection, DbErr, EntityTrait, TransactionTrait};
 use sea_orm::ActiveValue::Set;
 use sea_orm::prelude::Expr;
-use crate::schemas::admin::{sys_menu, sys_menu_permission, sys_permission, sys_permission_action, sys_role_permission};
+use crate::schemas::admin::{sys_menu, sys_permission, sys_permission_action, sys_role_permission};
 use crate::schemas::admin::prelude::{SysPermission, SysRolePermission};
 use sea_orm::QueryFilter;
 use sea_orm::ColumnTrait;
@@ -143,16 +143,16 @@ pub async fn get_paginated_permissions_with_menus(
             Expr::col((sys_permission::Entity, sys_permission::Column::Id))
                 .equals((sys_permission_action::Entity, sys_permission_action::Column::PermissionId)),
         )
-        .left_join(
-            sys_menu_permission::Entity,
-            Expr::col((sys_permission::Entity, sys_permission::Column::Id))
-                .equals((sys_menu_permission::Entity, sys_menu_permission::Column::PermissionId)),
-        )
-        .left_join(
-            sys_menu::Entity,
-            Expr::col((sys_menu_permission::Entity, sys_menu_permission::Column::MenuId))
-                .equals((sys_menu::Entity, sys_menu::Column::Id)),
-        )
+        // .left_join(
+        //     sys_menu_permission::Entity,
+        //     Expr::col((sys_permission::Entity, sys_permission::Column::Id))
+        //         .equals((sys_menu_permission::Entity, sys_menu_permission::Column::PermissionId)),
+        // )
+        // .left_join(
+        //     sys_menu::Entity,
+        //     Expr::col((sys_menu_permission::Entity, sys_menu_permission::Column::MenuId))
+        //         .equals((sys_menu::Entity, sys_menu::Column::Id)),
+        // )
         .group_by_col((sys_permission::Entity, sys_permission::Column::Id))
         .limit(size as u64)
         .offset(offset as u64);

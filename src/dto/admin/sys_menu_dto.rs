@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize, Serializer};
-use serde::ser::SerializeStruct;
+use sea_orm::ActiveEnum;
+use serde::{Deserialize, Serialize};
 use validator::{Validate, ValidationError};
 use crate::schemas::admin::sys_menu::Model;
 
@@ -94,7 +94,7 @@ impl From<Model> for MenuBaseRespDto {
             route_path: model.route_path,
             route_name: model.route_name,
             parent_id: model.parent_id.unwrap_or(0),
-            menu_type: model.r#type.to_string(),
+            menu_type: model.r#type.to_value().to_string(),
             status: model.status.to_string(),
             hide_in_menu: model.is_hidden == 1,
             order: model.sort,

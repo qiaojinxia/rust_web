@@ -109,7 +109,6 @@ impl ResponseError for ApiError {
         HttpResponse::build(status_code).json(error_response)
     }
 
-
 }
 
 #[macro_export]
