@@ -1,6 +1,6 @@
 # dev.toml
 [database]
-url = "mysql://cmdb:66LCpHmfPXrpKmfs@154.201.76.82:3306/cmdb" # 例如: "postgres://user:password@localhost/myapp"
+url = "xxx" # 例如: "postgres://user:password@localhost/myapp"
 init_sql = "init_db.sql"
 max_connections = 100
 min_connections = 5
