@@ -3,7 +3,7 @@ use crate::common::resp::ApiError;
 use crate::config::globals;
 use crate::create_response;
 use crate::dto::admin::sys_permission_dto::{PermissionCreationDto, PermissionCreationRespDto,
-                                            PermissionDeleteRespDto, PermissionDto, PermissionMenuDto,
+                                            PermissionDeleteRespDto, PermissionDto,
                                             PermissionRespDto, PermissionUpdateDto, PermissionUpdateRespDto};
 use crate::services::admin::sys_permission_services;
 use crate::common::resp::ApiResponse;
@@ -21,12 +21,14 @@ async fn create_permission(
     let result = sys_permission_services::create_permission(
         &*app_state.mysql_conn,
         permission_req_data.permission_code,
-        permission_req_data.description.unwrap(),
-        "admin".to_string(),
+        permission_req_data.description.unwrap_or_default(), // 使用默认值处理可能的None值
+        "admin".to_string(), // 这里可以动态获取创建用户，例如从会话或令牌
+        permission_req_data.status,
+        permission_req_data.targets.into_iter().map(|t| (t.target_id, t.target_type)).collect()
     ).await
         .map(|permission| PermissionCreationRespDto {
             base: PermissionDto::from(permission)
-        } )
+        })
         .map_err(|error| ApiError::InternalServerError(error.to_string()));
 
     create_response!(result)
@@ -40,17 +42,18 @@ async fn get_permissions(
 ) -> impl Responder {
     let current = info.current.unwrap_or(1);
     let page_size = info.size.unwrap_or(10);
-    let result =
-        sys_permission_services::get_permissions_with_menus(
+
+    let result = sys_permission_services::get_paginated_permissions_with_menus_apis(
         &*app_state.mysql_conn, current as usize, page_size as usize).await
-        .map(|(permissions, total)| {
-            PaginationResponseDto::new(current, page_size, total as u64, permissions.into_iter()
-                .map(|permission| PermissionMenuDto::from(permission)).collect::<Vec<PermissionMenuDto>>())
+        .map(|permissions| {
+            let total = permissions.len(); // 取得返回的权限总数，适用于小数据量，对于大数据量需要另外计算总数
+            PaginationResponseDto::new(current, page_size, total as u64, permissions)
         })
         .map_err(|error| ApiError::InternalServerError(error.to_string()));
 
     create_response!(result)
 }
+
 
 // Get a single permission by ID
 #[get("/permissions/{id}")]

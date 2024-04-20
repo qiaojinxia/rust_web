@@ -36,7 +36,7 @@ CREATE TABLE sys_role (
 
 -- 权限表
 DROP TABLE IF EXISTS sys_permission;
-CREATE TABLE sys_permission (
+    CREATE TABLE sys_permission (
                                 id INT AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
                                 permission_code VARCHAR(64)  NOT NULL UNIQUE COMMENT '权限名称',
                                 description VARCHAR(255) COMMENT '描述',
@@ -44,6 +44,7 @@ CREATE TABLE sys_permission (
                                 create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
                                 update_user VARCHAR(64) COMMENT '更新者',
                                 update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+                                status TINYINT(1) NOT NULL DEFAULT 1 COMMENT '权限状态 1(enable)/2(disabled)',
                                 INDEX idx_permission_code (permission_code)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -78,6 +79,7 @@ CREATE TABLE sys_menu (
 DROP TABLE IF EXISTS sys_api;
 CREATE TABLE sys_api (
                          id INT AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
+                         api_name VARCHAR(64) NOT NULL COMMENT 'Api名称',
                          api_group VARCHAR(64) NOT NULL COMMENT 'API组，如articles',
                          api_path VARCHAR(255) NOT NULL COMMENT 'API路径',
                          api_method ENUM('GET', 'POST', 'PUT', 'DELETE') NOT NULL COMMENT '请求方法',

@@ -2,12 +2,13 @@ use chrono::Utc;
 use sea_orm::{ActiveModelTrait, ConnectionTrait, DatabaseConnection, DbErr, EntityTrait, TransactionTrait};
 use sea_orm::ActiveValue::Set;
 use sea_orm::prelude::Expr;
-use crate::schemas::admin::{sys_menu, sys_permission, sys_permission_action, sys_role_permission};
+use crate::schemas::admin::{sea_orm_active_enums, sys_api, sys_menu, sys_permission, sys_permission_target, sys_role_permission};
 use crate::schemas::admin::prelude::{SysPermission, SysRolePermission};
 use sea_orm::QueryFilter;
 use sea_orm::ColumnTrait;
 use sea_orm::sea_query::{Alias, Query};
-use crate::dto::admin::sys_permission_dto::PermissionMenuDto;
+use crate::common::error::MyError;
+use crate::dto::admin::sys_permission_dto::{ApiDetail, MenuDetail, PermissionDetailsDto};
 
 //create_permission 创建权限
 pub async fn create_permission(
@@ -15,15 +16,33 @@ pub async fn create_permission(
     permission_code: String,
     description: String,
     create_user: String,
-) -> Result<sys_permission::Model, DbErr> {
+    status: i32,
+    targets: Vec<(i32, String)>,  // Vec of (target_id, target_type)
+) -> Result<sys_permission::Model, MyError> {
+    let transaction = db.begin().await?;
+    // Insert the permission
     let permission = sys_permission::ActiveModel {
         permission_code: Set(permission_code),
         description: Set(Some(description)),
         create_user: Set(create_user),
         create_time: Set(Some(Utc::now())),
+        status: Set(status as i8),
         ..Default::default()
     };
-    permission.insert(db).await
+    let inserted_permission = permission.insert(&transaction).await?;
+    // Insert permission targets
+    for (target_id, target_type) in targets {
+        let permission_target = sys_permission_target::ActiveModel {
+            permission_id: Set(inserted_permission.id),
+            target_id: Set(target_id),
+            target_type: Set(sea_orm_active_enums::TargetType::from_string(target_type.as_str())?),
+            ..Default::default()
+        };
+        permission_target.insert(&transaction).await?;
+    }
+    // Commit transaction
+    transaction.commit().await?;
+    Ok(inserted_permission)
 }
 
 
@@ -117,42 +136,48 @@ pub async fn get_total_permissions_count(
     }
 }
 
-pub async fn get_paginated_permissions_with_menus(
+pub async fn get_paginated_permissions_with_menus_apis(
     db: &DatabaseConnection,
     current: usize,
     size: usize,
-) -> Result<Vec<PermissionMenuDto>, DbErr> {
+) -> Result<Vec<PermissionDetailsDto>, DbErr> {
     let offset = (current.saturating_sub(1)) * size;
 
     let mut query = Query::select();
     query.columns(vec![
-            (sys_permission::Entity, sys_permission::Column::Id),
-            (sys_permission::Entity, sys_permission::Column::PermissionCode),
-            (sys_permission::Entity, sys_permission::Column::Description),
-        ])
-        .column((sys_menu::Entity, sys_menu::Column::MenuName))
-        .column((sys_menu::Entity, sys_menu::Column::Id))
-        .column((sys_menu::Entity, sys_menu::Column::Status))
+        (sys_permission::Entity, sys_permission::Column::Id),
+        (sys_permission::Entity, sys_permission::Column::PermissionCode),
+        (sys_permission::Entity, sys_permission::Column::Description),
+        (sys_permission::Entity, sys_permission::Column::Status),
+    ])
         .expr_as(
-            Expr::cust("GROUP_CONCAT(DISTINCT sys_permission_action.action_code SEPARATOR ',')"),
-            Alias::new("actions"),
-        ) // Custom expression for actions
+            Expr::cust("GROUP_CONCAT(DISTINCT CASE WHEN target_type = 'MENU' THEN CONCAT(menu_name, ':', menu_id) END SEPARATOR ',')"),
+            Alias::new("menus")
+        )
+        .expr_as(
+            Expr::cust("GROUP_CONCAT(DISTINCT CASE WHEN target_type = 'API' THEN CONCAT(api_name, ':', api_id) END SEPARATOR ',')"),
+            Alias::new("apis")
+        )
         .from(sys_permission::Entity)
         .left_join(
-            sys_permission_action::Entity,
+            sys_permission_target::Entity,
             Expr::col((sys_permission::Entity, sys_permission::Column::Id))
-                .equals((sys_permission_action::Entity, sys_permission_action::Column::PermissionId)),
+                .equals((sys_permission_target::Entity, sys_permission_target::Column::PermissionId)),
         )
-        // .left_join(
-        //     sys_menu_permission::Entity,
-        //     Expr::col((sys_permission::Entity, sys_permission::Column::Id))
-        //         .equals((sys_menu_permission::Entity, sys_menu_permission::Column::PermissionId)),
-        // )
-        // .left_join(
-        //     sys_menu::Entity,
-        //     Expr::col((sys_menu_permission::Entity, sys_menu_permission::Column::MenuId))
-        //         .equals((sys_menu::Entity, sys_menu::Column::Id)),
-        // )
+        .left_join(
+            sys_menu::Entity,
+            Expr::col((sys_permission_target::Entity, sys_permission_target::Column::TargetId))
+                .equals((sys_menu::Entity, sys_menu::Column::Id))
+                .and(Expr::col((sys_permission_target::Entity, sys_permission_target::Column::TargetType))
+                    .eq(sea_orm_active_enums::TargetType::Menu)),
+        )
+        .left_join(
+            sys_api::Entity,
+            Expr::col((sys_permission_target::Entity, sys_permission_target::Column::TargetId))
+                .equals((sys_api::Entity, sys_api::Column::Id))
+                .and(Expr::col((sys_permission_target::Entity, sys_permission_target::Column::TargetType))
+                    .eq(sea_orm_active_enums::TargetType::ApiGroup)),
+        )
         .group_by_col((sys_permission::Entity, sys_permission::Column::Id))
         .limit(size as u64)
         .offset(offset as u64);
@@ -161,43 +186,54 @@ pub async fn get_paginated_permissions_with_menus(
     let stmt = builder.build(&query);
     let rows = db.query_all(stmt).await?;
     let result = rows.iter().map(|row| {
-        // Parse each field from the row. Ensure you handle potential errors or missing values appropriately.
         let permission_id: i32 = row.try_get_by("permission_id").unwrap_or_default();
+        let status: i32 = row.try_get_by("status").unwrap_or_default();
         let permission_code: String = row.try_get_by("permission_code").unwrap_or_default();
         let description: String = row.try_get_by("description").unwrap_or_default();
-        let actions: String = row.try_get_by("actions").unwrap_or_default();
-        let menu_name: String = row.try_get_by("menu_name").unwrap_or_default();
-        let menu_id: i32 = row.try_get_by("menu_id").unwrap_or_default();
-        let menu_status: String = row.try_get_by("menu_status").unwrap_or_default();
+        let menus: String = row.try_get_by("menus").unwrap_or_default();
+        let apis: String = row.try_get_by("apis").unwrap_or_default();
 
-        // Split the actions string into a Vec<String>, assuming they are separated by commas
-        let action_codes: Vec<String> = actions.split(',').map(String::from).collect();
+        // Parse the menus and apis fields into Vecs of (name, id)
+        let menu_details: Vec<MenuDetail> = menus.split(',')
+            .filter_map(|s| {
+                let parts: Vec<&str> = s.split(':').collect();
+                if parts.len() == 2 {
+                    Some(MenuDetail {
+                        name: parts[0].to_string(),
+                        id: parts[1].parse().unwrap_or_default(),
+                    })
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        let api_details: Vec<ApiDetail> = apis.split(',')
+            .filter_map(|s| {
+                let parts: Vec<&str> = s.split(':').collect();
+                if parts.len() == 2 {
+                    Some(ApiDetail {
+                        name: parts[0].to_string(),
+                        id: parts[1].parse().unwrap_or_default(),
+                    })
+                } else {
+                    None
+                }
+            })
+            .collect();
 
         // Construct your DTO
-        PermissionMenuDto {
+        PermissionDetailsDto {
             permission_id,
             permission_code,
+            actions: vec![],//下个版本实现
             description,
-            actions: action_codes,
-            menu_name,
-            menu_id,
-            menu_status,
+            menus: menu_details,
+            apis: api_details,
+            menu_status: status,
         }
     }).collect();
 
     Ok(result)
 }
 
-pub async fn get_permissions_with_menus(
-    db: &DatabaseConnection,
-    current: usize,
-    page_size: usize,
-) -> Result<(Vec<PermissionMenuDto>, i64), DbErr> {
-    // Fetch total count of permissions
-    let total_count = get_total_permissions_count(db).await?;
-
-    // Fetch paginated permissions with menus
-    let permissions = get_paginated_permissions_with_menus(db, current, page_size).await?;
-
-    Ok((permissions, total_count))
-}

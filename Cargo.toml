@@ -25,7 +25,7 @@ bcrypt = "0.15.0"
 jsonwebtoken = "9.1.0"
 chrono = "0.4"
 serde_json = "1.0.108"
-validator = { version = "0.17.0", features = ["derive"] }
+validator = { version = "0.18.1", features = ["derive"] }
 futures-util = { version = "0.3.30", features = [] }
 futures = { version = "0.3.30", features = [] }
 actix-service ="2.0"

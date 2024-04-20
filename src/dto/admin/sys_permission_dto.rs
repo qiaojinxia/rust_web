@@ -2,10 +2,18 @@ use serde::{Deserialize, Serialize};
 use crate::schemas::admin::sys_permission::Model;
 
 // DTOs for Request and Response
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Deserialize)]
 pub struct PermissionCreationDto {
     pub permission_code: String,
     pub description: Option<String>,
+    pub status: i32,
+    pub targets: Vec<TargetDto>, // Assuming a simple TargetDto with target_id and target_type
+}
+
+#[derive(Deserialize)]
+pub struct TargetDto {
+    pub target_id: i32,
+    pub target_type: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -30,7 +38,7 @@ pub struct PermissionUpdateDto {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PermissionUpdateRespDto {
     #[serde(flatten)]
-    pub base: Option<PermissionMenuDto>,
+    pub base: Option<PermissionDetailsDto>,
 }
 
 
@@ -59,13 +67,25 @@ impl From<Model> for PermissionDto {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct PermissionMenuDto {
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MenuDetail {
+    pub name: String,
+    pub id: i32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ApiDetail {
+    pub name: String,
+    pub id: i32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PermissionDetailsDto {
     pub permission_id: i32,
     pub permission_code: String,
-    pub description: String,
     pub actions: Vec<String>, // Assuming action codes can be split into Vec<String>
-    pub menu_name: String,
-    pub menu_id: i32,
-    pub menu_status: String,
+    pub description: String,
+    pub menus: Vec<MenuDetail>,
+    pub apis: Vec<ApiDetail>,
+    pub menu_status: i32,
 }
