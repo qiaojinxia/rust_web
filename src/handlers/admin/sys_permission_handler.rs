@@ -9,7 +9,7 @@ use crate::services::admin::sys_permission_services;
 use crate::common::resp::ApiResponse;
 use actix_web::ResponseError;
 use crate::dto::admin::common_dto::{PaginationQueryDto, PaginationResponseDto};
-
+use validator::Validate;
 
 // Create a new permission
 #[post("/permissions")]
@@ -17,14 +17,19 @@ async fn create_permission(
     app_state: web::Data<globals::AppState>,
     permission_dto: web::Json<PermissionCreationDto>,
 ) -> impl Responder {
+    if let Err(errors) = permission_dto.0.validate() {
+        return create_response!(
+            Err::<PermissionCreationRespDto, ApiError>(ApiError::InvalidArgument(errors.to_string())));
+    }
     let permission_req_data = permission_dto.into_inner();
     let result = sys_permission_services::create_permission(
         &*app_state.mysql_conn,
         permission_req_data.permission_code,
-        permission_req_data.description.unwrap_or_default(), // 使用默认值处理可能的None值
-        "admin".to_string(), // 这里可以动态获取创建用户，例如从会话或令牌
-        permission_req_data.status,
-        permission_req_data.targets.into_iter().map(|t| (t.target_id, t.target_type)).collect()
+        permission_req_data.description.unwrap_or_default(), // Handle None as default empty string
+        "admin".to_string(), // Assuming 'admin' is the creator; ideally, this should be fetched dynamically
+        permission_req_data.status.parse::<i32>().unwrap(), // Ensure that status is appropriately parsed into an integer
+        permission_req_data.menus_id.unwrap_or_default(),   // Handle None by using default, which is an empty vector
+        permission_req_data.apis_id.unwrap_or_default()     // Handle None by using default, which is an empty vector
     ).await
         .map(|permission| PermissionCreationRespDto {
             base: PermissionDto::from(permission)
@@ -33,6 +38,7 @@ async fn create_permission(
 
     create_response!(result)
 }
+
 
 // Get all permissions
 #[get("/permissions")]

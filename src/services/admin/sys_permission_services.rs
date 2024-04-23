@@ -1,5 +1,5 @@
 use chrono::Utc;
-use sea_orm::{ActiveModelTrait, ConnectionTrait, DatabaseConnection, DbErr, EntityTrait, TransactionTrait};
+use sea_orm::{ActiveModelTrait, ConnectionTrait, DatabaseConnection, DatabaseTransaction, DbErr, EntityTrait, TransactionTrait};
 use sea_orm::ActiveValue::Set;
 use sea_orm::prelude::Expr;
 use crate::schemas::admin::{sea_orm_active_enums, sys_api, sys_menu, sys_permission, sys_permission_target, sys_role_permission};
@@ -10,6 +10,23 @@ use sea_orm::sea_query::{Alias, Query};
 use crate::common::error::MyError;
 use crate::dto::admin::sys_permission_dto::{ApiDetail, MenuDetail, PermissionDetailsDto};
 
+
+async fn insert_permission_target(
+    transaction: &DatabaseTransaction,
+    permission_id: i32,
+    target_id: i32,
+    target_type: sea_orm_active_enums::TargetType
+) -> Result<(), MyError> {
+    let permission_target = sys_permission_target::ActiveModel {
+        permission_id: Set(permission_id),
+        target_id: Set(target_id),
+        target_type: Set(target_type),
+        ..Default::default()
+    };
+    permission_target.insert(transaction).await?;
+    Ok(())
+}
+
 //create_permission 创建权限
 pub async fn create_permission(
     db: &DatabaseConnection,
@@ -17,10 +34,10 @@ pub async fn create_permission(
     description: String,
     create_user: String,
     status: i32,
-    targets: Vec<(i32, String)>,  // Vec of (target_id, target_type)
+    menu_ids: Vec<i32>,
+    api_ids: Vec<i32>,
 ) -> Result<sys_permission::Model, MyError> {
     let transaction = db.begin().await?;
-    // Insert the permission
     let permission = sys_permission::ActiveModel {
         permission_code: Set(permission_code),
         description: Set(Some(description)),
@@ -30,21 +47,18 @@ pub async fn create_permission(
         ..Default::default()
     };
     let inserted_permission = permission.insert(&transaction).await?;
-    // Insert permission targets
-    for (target_id, target_type) in targets {
-        let permission_target = sys_permission_target::ActiveModel {
-            permission_id: Set(inserted_permission.id),
-            target_id: Set(target_id),
-            target_type: Set(sea_orm_active_enums::TargetType::from_string(target_type.as_str())?),
-            ..Default::default()
-        };
-        permission_target.insert(&transaction).await?;
+
+    // Insert permission targets for menus
+    for menu_id in menu_ids {
+        insert_permission_target(&transaction, inserted_permission.id, menu_id, sea_orm_active_enums::TargetType::Menu).await?;
     }
-    // Commit transaction
+    // Insert permission targets for APIs
+    for api_id in api_ids {
+        insert_permission_target(&transaction, inserted_permission.id, api_id, sea_orm_active_enums::TargetType::ApiGroup).await?;
+    }
     transaction.commit().await?;
     Ok(inserted_permission)
 }
-
 
 //get_permission_by_id 获取单个权限
 pub async fn get_permission_by_id(
@@ -151,11 +165,11 @@ pub async fn get_paginated_permissions_with_menus_apis(
         (sys_permission::Entity, sys_permission::Column::Status),
     ])
         .expr_as(
-            Expr::cust("GROUP_CONCAT(DISTINCT CASE WHEN target_type = 'MENU' THEN CONCAT(menu_name, ':', menu_id) END SEPARATOR ',')"),
+            Expr::cust("GROUP_CONCAT(DISTINCT CASE WHEN target_type = 'MENU' THEN CONCAT(sys_menu.menu_name, ':', sys_menu.id) END SEPARATOR ',')"),
             Alias::new("menus")
         )
         .expr_as(
-            Expr::cust("GROUP_CONCAT(DISTINCT CASE WHEN target_type = 'API' THEN CONCAT(api_name, ':', api_id) END SEPARATOR ',')"),
+            Expr::cust("GROUP_CONCAT(DISTINCT CASE WHEN target_type = 'API' THEN CONCAT(sys_api.api_name, ':', sys_api.id) END SEPARATOR ',')"),
             Alias::new("apis")
         )
         .from(sys_permission::Entity)

@@ -1,19 +1,19 @@
 use serde::{Deserialize, Serialize};
+use validator::Validate;
 use crate::schemas::admin::sys_permission::Model;
 
 // DTOs for Request and Response
-#[derive(Deserialize)]
+#[derive(Deserialize, Validate)]
 pub struct PermissionCreationDto {
+    #[serde(rename = "permissionCode")]
     pub permission_code: String,
     pub description: Option<String>,
-    pub status: i32,
-    pub targets: Vec<TargetDto>, // Assuming a simple TargetDto with target_id and target_type
-}
-
-#[derive(Deserialize)]
-pub struct TargetDto {
-    pub target_id: i32,
-    pub target_type: String,
+    pub actions: Vec<String>,
+    #[serde(rename = "menusId")]
+    pub menus_id:Option<Vec<i32>>,
+    #[serde(rename = "apisId")]
+    pub apis_id:Option<Vec<i32>>,
+    pub status: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

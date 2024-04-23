@@ -80,7 +80,7 @@ pub async fn get_menus_paged(
     db: &DatabaseConnection,
     page: u64, // 当前页码，从1开始
     page_size: u64, // 每页条目数
-) -> Result<(Vec<sys_menu::Model>, u64), DbErr> {
+) -> Result<(Vec<sys_menu::Model>, u64), MyError> {
     // 使用.find()开始构建查询
     let paginator = SysMenu::find()
         .paginate(db, page_size); // 设置每页条目数
@@ -240,46 +240,42 @@ impl MenuTree {
         }
     }
 }
-pub fn build_menu_tree(menus: Vec<sys_menu::Model>) -> Vec<MenuTreeResponseDto> {
+pub fn build_menu_tree(menus: Vec<sys_menu::Model>) -> Option<MenuTreeResponseDto> {
     let mut menu_map: HashMap<i32, Rc<RefCell<MenuTree>>> = HashMap::new();
-    let mut roots: Vec<Rc<RefCell<MenuTree>>> = Vec::new();
-    
-    // 第一步：为每个菜单项创建DTO，并存储在menu_map中
+    let mut root: Option<Rc<RefCell<MenuTree>>> = None;
+
     for menu in menus.iter() {
         let menu_tree_dto = Rc::new(RefCell::new(MenuTree {
             id: menu.id,
-            parent_id: None, // 初始时为None，稍后更新
+            parent_id: None,
             label: menu.menu_name.clone(),
             children: Some(RefCell::new(Vec::new())),
         }));
         menu_map.insert(menu.id, Rc::clone(&menu_tree_dto));
     }
 
-    // 第二步：建立父子关系并正确设置parent_id
     for menu in menus.iter() {
         if let Some(parent_id) = menu.parent_id {
             if let Some(parent) = menu_map.get(&parent_id) {
                 let child = menu_map.get(&menu.id).unwrap();
 
-                // 设置 child 的 parent_id 为指向 parent 的弱引用
                 child.borrow_mut().parent_id = Some(Rc::downgrade(&parent));
 
-                // 正确处理 Option，添加 child 到 parent 的 children 中
                 if let Some(children) = parent.borrow_mut().children.as_mut() {
                     children.borrow_mut().push(Rc::clone(&child));
                 } else {
-                    // 如果 children 是 None，可以在这里初始化它
-                    let mut new_children = Vec::new();
-                    new_children.push(Rc::clone(&child));
-                    parent.borrow_mut().children = Some(RefCell::new(new_children));
+                    parent.borrow_mut().children = Some(RefCell::new(vec![Rc::clone(&child)]));
                 }
             }
         } else {
-            // 如果没有 parent_id，则为根节点
-            roots.push(menu_map.get(&menu.id).unwrap().clone());
+            if root.is_some() {
+                // Handle the case where there is more than one root. Options include logging an error or choosing the first one.
+                // For now, let's assume we only keep the first root.
+                continue;
+            }
+            root = Some(menu_map.get(&menu.id).unwrap().clone());
         }
     }
-    roots.into_iter().map(|tree_rc| {
-        tree_rc.borrow().to_serializable()
-    }).collect()
+
+    root.map(|tree_rc| tree_rc.borrow().to_serializable())
 }
