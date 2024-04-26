@@ -81,11 +81,12 @@ pub struct ApiDetail {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PermissionDetailsDto {
-    pub permission_id: i32,
+    pub id: i32,
+    #[serde(rename = "permissionCode")]
     pub permission_code: String,
-    pub actions: Vec<String>, // Assuming action codes can be split into Vec<String>
+    pub actions: Vec<String>,
     pub description: String,
     pub menus: Vec<MenuDetail>,
     pub apis: Vec<ApiDetail>,
-    pub menu_status: i32,
+    pub status: String,
 }

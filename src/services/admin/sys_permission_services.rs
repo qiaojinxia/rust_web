@@ -200,7 +200,7 @@ pub async fn get_paginated_permissions_with_menus_apis(
     let stmt = builder.build(&query);
     let rows = db.query_all(stmt).await?;
     let result = rows.iter().map(|row| {
-        let permission_id: i32 = row.try_get_by("permission_id").unwrap_or_default();
+        let permission_id: i32 = row.try_get_by("id").unwrap_or_default();
         let status: i32 = row.try_get_by("status").unwrap_or_default();
         let permission_code: String = row.try_get_by("permission_code").unwrap_or_default();
         let description: String = row.try_get_by("description").unwrap_or_default();
@@ -238,13 +238,13 @@ pub async fn get_paginated_permissions_with_menus_apis(
 
         // Construct your DTO
         PermissionDetailsDto {
-            permission_id,
+            id: permission_id,
             permission_code,
             actions: vec![],//下个版本实现
             description,
             menus: menu_details,
             apis: api_details,
-            menu_status: status,
+            status: status.to_string(),
         }
     }).collect();
 
