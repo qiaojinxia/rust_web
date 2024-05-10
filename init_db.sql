@@ -37,39 +37,40 @@ CREATE TABLE sys_role (
 -- 权限表
 DROP TABLE IF EXISTS sys_permission;
     CREATE TABLE sys_permission (
-                                id INT AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
-                                permission_code VARCHAR(64)  NOT NULL UNIQUE COMMENT '权限名称',
-                                description VARCHAR(255) COMMENT '描述',
-                                create_user VARCHAR(64) NOT NULL COMMENT '创建者',
-                                create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-                                update_user VARCHAR(64) COMMENT '更新者',
-                                update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-                                status TINYINT(1) NOT NULL DEFAULT 1 COMMENT '权限状态 1(enable)/2(disabled)',
-                                INDEX idx_permission_code (permission_code)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
-
--- 删除sys_menu表如果存在
-DROP TABLE IF EXISTS sys_menu;
--- 创建sys_menu表，并在创建时添加索引
-CREATE TABLE sys_menu (
                           id INT AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
-                          menu_name VARCHAR(64) NOT NULL COMMENT '菜单名称',
-                          route_path VARCHAR(255) NOT NULL COMMENT '路由路径',
-                          route_name VARCHAR(255) NOT NULL COMMENT '路由名称',
-                          sort TINYINT NOT NULL DEFAULT 0 COMMENT '菜单排序',
-                          parent_id INT DEFAULT NULL COMMENT '父菜单ID',
-                          redirect VARCHAR(255) COMMENT '重定向地址',
-                          type ENUM('DIRECTORY', 'MENU', 'BUTTON') NOT NULL DEFAULT 'MENU' COMMENT '菜单项类型：目录、菜单、按钮',
-                          component VARCHAR(255) COMMENT '组件路径',
-                          meta JSON COMMENT '元数据（包含样式、图标、附加权限、附加参数等）',
+                          permission_name VARCHAR(128) NOT NULL,
+                          permission_code VARCHAR(64)  NOT NULL UNIQUE COMMENT '权限名称',
+                          description VARCHAR(255) COMMENT '描述',
                           create_user VARCHAR(64) NOT NULL COMMENT '创建者',
                           create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
                           update_user VARCHAR(64) COMMENT '更新者',
                           update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-                          is_hidden TINYINT(1) NOT NULL DEFAULT 1 COMMENT '是否隐藏',
-                          status TINYINT(1) NOT NULL DEFAULT 0 COMMENT '菜单状态 1(enable)/2(disabled)',
-                          FOREIGN KEY (parent_id) REFERENCES sys_menu(id),
+                          status TINYINT(1) NOT NULL DEFAULT 1 COMMENT '权限状态 1(enable)/2(disabled)',
+                          INDEX idx_permission_code (permission_code)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+
+-- 删除 sys_menu 表如果存在
+DROP TABLE IF EXISTS sys_menu;
+-- 创建 sys_menu 表，并在创建时添加索引
+CREATE TABLE sys_menu (
+                          id INT AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
+                          parent_id INT DEFAULT NULL COMMENT '父菜单ID',
+                          type ENUM('DIRECTORY', 'MENU', 'BUTTON') NOT NULL DEFAULT 'MENU' COMMENT '菜单项类型：目录、菜单、按钮',
+                          menu_name VARCHAR(64) COMMENT '菜单名称',
+                          route_name VARCHAR(255) COMMENT '路由名称',
+                          route_path VARCHAR(255) COMMENT '路由路径',
+                          component VARCHAR(255) COMMENT '组件路径',
+                          path_param VARCHAR(255) COMMENT '路径参数',
+                          sort INT DEFAULT NULL COMMENT '菜单排序',
+                          constant TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否为常量路由',
+                          meta JSON COMMENT '元数据，包含字段 icon, icon_type, i18n_key, keep_alive, href, active_menu, multiTab, fixed_index_in_tab, query',
+                          create_user VARCHAR(64) NOT NULL COMMENT '创建者',
+                          create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                          update_user VARCHAR(64) COMMENT '更新者',
+                          update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+                          is_hidden TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否隐藏',
+                          status TINYINT(1) NOT NULL DEFAULT 1 COMMENT '菜单状态 1(enable)/2(disabled)',
                           INDEX idx_menu_name (menu_name),
                           INDEX idx_parent_id (parent_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -97,24 +98,24 @@ CREATE TABLE sys_api (
 -- 权限操作表
 DROP TABLE IF EXISTS sys_permission_action;
 CREATE TABLE sys_permission_action (
-                                       id INT AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
-                                       permission_id INT NOT NULL COMMENT '权限ID',
-                                       action_code ENUM('CREATE', 'READ', 'UPDATE', 'DELETE') NOT NULL COMMENT '操作权限代码',
-                                       FOREIGN KEY (permission_id) REFERENCES sys_permission(id) ,
-                                       INDEX idx_permission_id (permission_id)
+                          id INT AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
+                          permission_id INT NOT NULL COMMENT '权限ID',
+                          action_code ENUM('CREATE', 'READ', 'UPDATE', 'DELETE') NOT NULL COMMENT '操作权限代码',
+                          FOREIGN KEY (permission_id) REFERENCES sys_permission(id) ,
+                          INDEX idx_permission_id (permission_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
 
 DROP TABLE IF EXISTS sys_permission_target;
 CREATE TABLE sys_permission_target (
-                                       permission_id INT NOT NULL,
-                                       target_id INT NOT NULL,
-                                       target_type ENUM('MENU', 'API_GROUP') NOT NULL,
-                                       PRIMARY KEY (permission_id, target_id, target_type),
-                                       FOREIGN KEY (permission_id) REFERENCES sys_permission(id) ON DELETE CASCADE,
-                                       INDEX idx_target_id (target_id),
-                                       INDEX idx_target_type (target_type)
+                          permission_id INT NOT NULL,
+                          target_id INT NOT NULL,
+                          target_type ENUM('MENU', 'API_GROUP') NOT NULL,
+                          PRIMARY KEY (permission_id, target_id, target_type),
+                          FOREIGN KEY (permission_id) REFERENCES sys_permission(id) ON DELETE CASCADE,
+                          INDEX idx_target_id (target_id),
+                          INDEX idx_target_type (target_type)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
@@ -122,17 +123,17 @@ CREATE TABLE sys_permission_target (
 -- 用户角色关联表
 DROP TABLE IF EXISTS sys_user_role;
 CREATE TABLE sys_user_role (
-                               id INT AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
-                               user_id INT NOT NULL COMMENT '用户ID',
-                               role_id INT NOT NULL COMMENT '角色ID',
-                               create_user VARCHAR(64) NOT NULL COMMENT '创建者',
-                               create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-                               update_user VARCHAR(64) COMMENT '更新者',
-                               update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-                               FOREIGN KEY (user_id) REFERENCES sys_user(id) ON DELETE CASCADE,
-                               FOREIGN KEY (role_id) REFERENCES sys_role(id) ON DELETE CASCADE,
-                               INDEX idx_user_id (user_id),
-                               INDEX idx_role_id (role_id)
+                          id INT AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
+                          user_id INT NOT NULL COMMENT '用户ID',
+                          role_id INT NOT NULL COMMENT '角色ID',
+                          create_user VARCHAR(64) NOT NULL COMMENT '创建者',
+                          create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                          update_user VARCHAR(64) COMMENT '更新者',
+                          update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+                          FOREIGN KEY (user_id) REFERENCES sys_user(id) ON DELETE CASCADE,
+                          FOREIGN KEY (role_id) REFERENCES sys_role(id) ON DELETE CASCADE,
+                          INDEX idx_user_id (user_id),
+                          INDEX idx_role_id (role_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 
@@ -140,17 +141,17 @@ CREATE TABLE sys_user_role (
 -- 角色权限关联表
 DROP TABLE IF EXISTS sys_role_permission;
 CREATE TABLE sys_role_permission (
-                                     id INT AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
-                                     role_id INT NOT NULL COMMENT '角色ID',
-                                     permission_id INT NOT NULL COMMENT '权限ID',
-                                     create_user VARCHAR(64) NOT NULL COMMENT '创建者',
-                                     create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-                                     update_user VARCHAR(64) COMMENT '更新者',
-                                     update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-                                     FOREIGN KEY (role_id) REFERENCES sys_role(id) ON DELETE CASCADE,
-                                     FOREIGN KEY (permission_id) REFERENCES sys_permission(id) ON DELETE CASCADE,
-                                     INDEX idx_role_id (role_id),
-                                     INDEX idx_permission_id (permission_id)
+                          id INT AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
+                          role_id INT NOT NULL COMMENT '角色ID',
+                          permission_id INT NOT NULL COMMENT '权限ID',
+                          create_user VARCHAR(64) NOT NULL COMMENT '创建者',
+                          create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+                          update_user VARCHAR(64) COMMENT '更新者',
+                          update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+                          FOREIGN KEY (role_id) REFERENCES sys_role(id) ON DELETE CASCADE,
+                          FOREIGN KEY (permission_id) REFERENCES sys_permission(id) ON DELETE CASCADE,
+                          INDEX idx_role_id (role_id),
+                          INDEX idx_permission_id (permission_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 

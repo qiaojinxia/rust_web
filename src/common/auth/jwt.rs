@@ -1,14 +1,16 @@
-use serde::{Serialize, Deserialize};
-use std::time::{SystemTime, UNIX_EPOCH, Duration};
-use jsonwebtoken::{decode, encode, Algorithm, Header, EncodingKey,DecodingKey, Validation, TokenData};
-use sea_orm::FromQueryResult;
 use crate::config;
+use jsonwebtoken::{
+    decode, encode, Algorithm, DecodingKey, EncodingKey, Header, TokenData, Validation,
+};
+use sea_orm::FromQueryResult;
+use serde::{Deserialize, Serialize};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Claims {
-    pub user_name: String,  // 通常用于存放唯一用户标识
-    pub exp: usize,   // Token的过期时间
-    pub role_codes:Vec<String>, // 用户权限
+    pub user_name: String,       // 通常用于存放唯一用户标识
+    pub exp: usize,              // Token的过期时间
+    pub role_codes: Vec<String>, // 用户权限
 }
 
 // 假设的结构体表示菜单项
@@ -28,7 +30,7 @@ impl Claims {
             .as_secs() as usize;
         current_time > self.exp
     }
-    pub fn new() -> Self{
+    pub fn new() -> Self {
         Claims {
             user_name: "".to_string(),
             exp: 0,
@@ -45,11 +47,16 @@ pub fn decode_jwt(token: &str) -> Result<TokenData<Claims>, jsonwebtoken::errors
     )
 }
 
-pub fn generate_jwt(user_name: String, roles: Vec<String>) -> Result<String, jsonwebtoken::errors::Error> {
+pub fn generate_jwt(
+    user_name: String,
+    roles: Vec<String>,
+) -> Result<String, jsonwebtoken::errors::Error> {
     let expiration = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .expect("Time went backwards")
-        .checked_add(Duration::from_secs(config::globals::APP_CONFIG.jwt.expire_time)) // Token有效期为1小时
+        .checked_add(Duration::from_secs(
+            config::globals::APP_CONFIG.jwt.expire_time,
+        )) // Token有效期为1小时
         .expect("Invalid expiration time")
         .as_secs() as usize;
 
@@ -65,4 +72,3 @@ pub fn generate_jwt(user_name: String, roles: Vec<String>) -> Result<String, jso
         &EncodingKey::from_secret(config::globals::APP_CONFIG.jwt.secret.as_ref()),
     )
 }
-

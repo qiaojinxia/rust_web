@@ -1,14 +1,14 @@
-use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, DbErr, EntityTrait};
-use sea_orm::ActiveValue::Set;
 use crate::dto::admin::sys_role_dto;
-use crate::schemas::admin::{sys_role};
-use crate::schemas::admin::prelude::{SysRole};
+use crate::schemas::admin::prelude::SysRole;
+use crate::schemas::admin::sys_role;
+use sea_orm::ActiveValue::Set;
 use sea_orm::QueryFilter;
+use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, DbErr, EntityTrait};
 //create_role 创建角色
 pub async fn create_role(
     db: &DatabaseConnection,
     create_user: String,
-    role_create_info: sys_role_dto::RoleCreationDto
+    role_create_info: sys_role_dto::RoleCreationDto,
 ) -> Result<sys_role::Model, DbErr> {
     let mut role = sys_role::ActiveModel {
         ..Default::default()
@@ -32,9 +32,7 @@ pub async fn create_role(
 }
 
 //get_roles 获取角色列表
-pub async fn get_roles(
-    db: &DatabaseConnection,
-) -> Result<Vec<sys_role::Model>, DbErr> {
+pub async fn get_roles(db: &DatabaseConnection) -> Result<Vec<sys_role::Model>, DbErr> {
     SysRole::find().all(db).await
 }
 
@@ -50,9 +48,10 @@ pub async fn get_role_by_id(
 pub async fn update_role(
     db: &DatabaseConnection,
     role_id: i32,
-    role_update_info: sys_role_dto::RoleUpdateDto
+    role_update_info: sys_role_dto::RoleUpdateDto,
 ) -> Result<Option<sys_role::Model>, DbErr> {
-    let mut role: sys_role::ActiveModel = SysRole::find_by_id(role_id).one(db).await?.unwrap().into();
+    let mut role: sys_role::ActiveModel =
+        SysRole::find_by_id(role_id).one(db).await?.unwrap().into();
 
     if let Some(rn) = role_update_info.role_name {
         role.role_name = Set(rn);
@@ -69,12 +68,8 @@ pub async fn update_role(
     role.update(db).await.map(Some)
 }
 
-
 //delete_role 删除角色
-pub async fn delete_role(
-    db: &DatabaseConnection,
-    role_id: i32,
-) -> Result<u64, DbErr> {
+pub async fn delete_role(db: &DatabaseConnection, role_id: i32) -> Result<u64, DbErr> {
     let role = sys_role::ActiveModel {
         id: Set(role_id),
         ..Default::default()
@@ -89,13 +84,15 @@ pub async fn delete_role(
 pub async fn get_role_ids_by_role_codes(
     db: &DatabaseConnection,
     role_codes: Vec<String>, // role_code 数组
-) -> Result<Vec<i32>, DbErr> { // 假设 id 类型为 i32
+) -> Result<Vec<i32>, DbErr> {
+    // 假设 id 类型为 i32
     let roles = SysRole::find()
         .filter(sys_role::Column::RoleCode.is_in(role_codes)) // 使用 is_in 方法来过滤 role_code
         .all(db)
         .await?;
 
-    let ids: Vec<i32> = roles.into_iter()
+    let ids: Vec<i32> = roles
+        .into_iter()
         .map(|role| role.id) // 假设 sys_role::Model 有一个 id 字段
         .collect();
 

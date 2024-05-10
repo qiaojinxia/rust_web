@@ -1,22 +1,22 @@
-use sea_orm::{ActiveModelTrait, ColumnTrait, ConnectionTrait,
-              DatabaseConnection, DbErr, EntityTrait, FromQueryResult,
-              QueryFilter, QuerySelect};
-use sea_orm::ActiveValue::Set;
-use sea_orm::sea_query::{Alias, Expr, Query};
 use crate::common::auth;
 use crate::dto::admin::sys_user_dto::{UserCreateDto, UserWithRolesDto};
-use crate::schemas::admin::{sys_role, sys_user, sys_user_role};
-use crate::schemas::admin::prelude::{SysUser};
+use crate::schemas::admin::prelude::SysUser;
 use crate::schemas::admin::sea_orm_active_enums::Gender;
+use crate::schemas::admin::{sys_role, sys_user, sys_user_role};
+use sea_orm::sea_query::{Alias, Expr, Query};
+use sea_orm::ActiveValue::Set;
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, ConnectionTrait, DatabaseConnection, DbErr, EntityTrait,
+    FromQueryResult, QueryFilter, QuerySelect,
+};
 
 //create_user 创建用户
 pub async fn create_user(
     db: &DatabaseConnection,
-    user_create_req:UserCreateDto,
-    create_user: String
+    user_create_req: UserCreateDto,
+    create_user: String,
 ) -> Result<sys_user::Model, DbErr> {
-    let password_hash =
-        auth::crypto::hash_password(Some(user_create_req.password)).unwrap(); // 假设这是一个外部函数，用于安全地散列密码
+    let password_hash = auth::crypto::hash_password(Some(user_create_req.password)).unwrap(); // 假设这是一个外部函数，用于安全地散列密码
 
     let user = sys_user::ActiveModel {
         user_name: Set(user_create_req.user_name),
@@ -40,19 +40,21 @@ pub async fn get_users_with_roles(
     let offset = (current.saturating_sub(1)) * size;
 
     let mut query = Query::select();
-    query.columns(vec![
-        (sys_user::Entity, sys_user::Column::Id),
-        (sys_user::Entity, sys_user::Column::UserName),
-        (sys_user::Entity, sys_user::Column::NickName),
-        (sys_user::Entity, sys_user::Column::Email),
-        (sys_user::Entity, sys_user::Column::Mobile),
-        (sys_user::Entity, sys_user::Column::Gender),
-        (sys_user::Entity, sys_user::Column::Status),
-        (sys_user::Entity, sys_user::Column::CreateUser),
-        (sys_user::Entity, sys_user::Column::CreateTime),
-        (sys_user::Entity, sys_user::Column::UpdateUser),
-        (sys_user::Entity, sys_user::Column::UpdateTime),
-    ]).column( (sys_role::Entity, sys_role::Column::Id))
+    query
+        .columns(vec![
+            (sys_user::Entity, sys_user::Column::Id),
+            (sys_user::Entity, sys_user::Column::UserName),
+            (sys_user::Entity, sys_user::Column::NickName),
+            (sys_user::Entity, sys_user::Column::Email),
+            (sys_user::Entity, sys_user::Column::Mobile),
+            (sys_user::Entity, sys_user::Column::Gender),
+            (sys_user::Entity, sys_user::Column::Status),
+            (sys_user::Entity, sys_user::Column::CreateUser),
+            (sys_user::Entity, sys_user::Column::CreateTime),
+            (sys_user::Entity, sys_user::Column::UpdateUser),
+            (sys_user::Entity, sys_user::Column::UpdateTime),
+        ])
+        .column((sys_role::Entity, sys_role::Column::Id))
         .expr_as(
             Expr::cust("GROUP_CONCAT(DISTINCT sys_role.role_code SEPARATOR ',')"),
             Alias::new("role_codes"),
@@ -75,49 +77,49 @@ pub async fn get_users_with_roles(
     let builder = db.get_database_backend();
     let stmt = builder.build(&query); // 构建查询语句
     let rows = db.query_all(stmt).await?;
-    let result: Vec<UserWithRolesDto> = rows.iter().map(|row| {
-        let user_id = row.try_get_by("id").unwrap_or_default();
-        let user_name = row.try_get_by("user_name").unwrap_or_default();
-        let nick_name = row.try_get_by("nick_name").unwrap_or_default();
-        let user_email = row.try_get_by("email").unwrap_or_default();
-        let user_phone = row.try_get_by("mobile").unwrap_or_default();
-        let user_gender = row.try_get_by("gender").unwrap_or_default();
-        let status = row.try_get_by("status").unwrap_or_default();
-        let create_by = row.try_get_by("create_user").unwrap_or_default();
-        let create_time = row.try_get_by("create_time").unwrap_or_default();
-        let update_by = row.try_get_by("update_user").unwrap_or_default();
-        let update_time = row.try_get_by("update_time").unwrap_or_default();
-        let role_codes: String = row.try_get_by("role_codes").unwrap_or_default();
-        let user_roles: Result<Vec<i32>, _> = role_codes.split(',')
-            .map(|code| code.trim().parse())
-            .collect();
-        UserWithRolesDto {
-            id: user_id,
-            user_name,
-            nick_name,
-            user_email,
-            user_phone,
-            user_gender,
-            status,
-            create_by,
-            create_time,
-            update_by,
-            update_time,
-            user_roles: Some(user_roles.unwrap_or(vec![])),
-        }
-    }).collect();
+    let result: Vec<UserWithRolesDto> = rows
+        .iter()
+        .map(|row| {
+            let user_id = row.try_get_by("id").unwrap_or_default();
+            let user_name = row.try_get_by("user_name").unwrap_or_default();
+            let nick_name = row.try_get_by("nick_name").unwrap_or_default();
+            let user_email = row.try_get_by("email").unwrap_or_default();
+            let user_phone = row.try_get_by("mobile").unwrap_or_default();
+            let user_gender = row.try_get_by("gender").unwrap_or_default();
+            let status = row.try_get_by("status").unwrap_or_default();
+            let create_by = row.try_get_by("create_user").unwrap_or_default();
+            let create_time = row.try_get_by("create_time").unwrap_or_default();
+            let update_by = row.try_get_by("update_user").unwrap_or_default();
+            let update_time = row.try_get_by("update_time").unwrap_or_default();
+            let role_codes: String = row.try_get_by("role_codes").unwrap_or_default();
+            let user_roles: Result<Vec<i32>, _> = role_codes
+                .split(',')
+                .map(|code| code.trim().parse())
+                .collect();
+            UserWithRolesDto {
+                id: user_id,
+                user_name,
+                nick_name,
+                user_email,
+                user_phone,
+                user_gender,
+                status,
+                create_by,
+                create_time,
+                update_by,
+                update_time,
+                user_roles: Some(user_roles.unwrap_or(vec![])),
+            }
+        })
+        .collect();
 
     Ok(result)
 }
 
 //get_users 获取用户列表
-pub async fn get_users(
-    db: &DatabaseConnection,
-) -> Result<Vec<sys_user::Model>, DbErr> {
+pub async fn get_users(db: &DatabaseConnection) -> Result<Vec<sys_user::Model>, DbErr> {
     SysUser::find().all(db).await
 }
-
-
 
 //get_user_by_id 获取单个用户
 pub async fn get_user_by_id(
@@ -138,7 +140,8 @@ pub async fn update_user(
     mobile: Option<String>,
     // ... 其他可选字段
 ) -> Result<Option<sys_user::Model>, DbErr> {
-    let mut user: sys_user::ActiveModel = SysUser::find_by_id(user_id).one(db).await?.unwrap().into();
+    let mut user: sys_user::ActiveModel =
+        SysUser::find_by_id(user_id).one(db).await?.unwrap().into();
 
     if let Some(un) = user_name {
         user.user_name = Set(un);
@@ -160,10 +163,7 @@ pub async fn update_user(
 }
 
 //delete_user 删除用户
-pub async fn delete_user(
-    db: &DatabaseConnection,
-    user_id: i32,
-) -> Result<u64, DbErr> {
+pub async fn delete_user(db: &DatabaseConnection, user_id: i32) -> Result<u64, DbErr> {
     let user = sys_user::ActiveModel {
         id: Set(user_id),
         ..Default::default()
@@ -189,8 +189,9 @@ pub async fn find_user_by_email_or_mobile(
     email: Option<String>,
     mobile: Option<String>,
 ) -> Result<Option<sys_user::Model>, DbErr> {
-    let  query = SysUser::find()
-        .filter(sys_user::Column::Email.eq(email)).filter(sys_user::Column::Mobile.eq(mobile));
+    let query = SysUser::find()
+        .filter(sys_user::Column::Email.eq(email))
+        .filter(sys_user::Column::Mobile.eq(mobile));
     query.one(db).await
 }
 
@@ -199,8 +200,7 @@ pub async fn find_user_by_username(
     db: &DatabaseConnection,
     user_name: Option<String>,
 ) -> Result<Option<sys_user::Model>, DbErr> {
-    let  query = SysUser::find()
-        .filter(sys_user::Column::UserName.eq(user_name));
+    let query = SysUser::find().filter(sys_user::Column::UserName.eq(user_name));
     query.one(db).await
 }
 

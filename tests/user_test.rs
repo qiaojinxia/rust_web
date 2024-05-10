@@ -1,11 +1,11 @@
-use my_gpt::{app, common, handlers};
 use my_gpt::config::globals::APP_STATE;
 use my_gpt::services::admin::sys_user_services::get_users_with_roles;
+use my_gpt::{app, common, handlers};
 #[actix_rt::test]
-async fn test_get_menus_by_role_id(){
+async fn test_get_menus_by_role_id() {
     app::init().await;
     let app_state = APP_STATE.get().unwrap();
-    let result = get_users_with_roles(&app_state.mysql_conn.clone(),1,2).await;
+    let result = get_users_with_roles(&app_state.mysql_conn.clone(), 1, 2).await;
     // 检查结果是否成功
     assert!(result.is_ok());
     let menus = result.unwrap();

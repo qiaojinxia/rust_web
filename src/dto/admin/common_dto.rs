@@ -1,4 +1,4 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
 pub struct PaginationResponseDto<T> {
@@ -18,7 +18,6 @@ impl<T> PaginationResponseDto<T> {
         }
     }
 }
-
 
 #[derive(Deserialize, Copy, Clone)]
 pub struct PaginationQueryDto {

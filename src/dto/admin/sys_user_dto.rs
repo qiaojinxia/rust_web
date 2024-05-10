@@ -1,6 +1,6 @@
+use crate::schemas::admin::sys_user::Model;
 use serde::{Deserialize, Serialize};
 use validator::Validate;
-use crate::schemas::admin::sys_user::Model;
 
 #[derive(Debug, Deserialize, Serialize, Validate)]
 pub struct UserCreateDto {
@@ -33,7 +33,6 @@ pub struct UserCreateRespDto {
     pub base: UserWithRolesDto,
 }
 
-
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UserWithRolesDto {
     #[serde(rename = "id")]
@@ -62,6 +61,15 @@ pub struct UserWithRolesDto {
     pub user_roles: Option<Vec<i32>>,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UserInfo {
+    pub(crate) user_id: String,
+    pub(crate) user_name: String,
+    pub(crate) buttons: Vec<String>,
+    pub(crate) roles: Vec<String>,
+}
+
 impl From<(Model, Option<Vec<i32>>)> for UserWithRolesDto {
     fn from((user, roles): (Model, Option<Vec<i32>>)) -> Self {
         UserWithRolesDto {
@@ -73,9 +81,13 @@ impl From<(Model, Option<Vec<i32>>)> for UserWithRolesDto {
             user_gender: "M".to_string(),
             status: user.status.to_string(),
             create_by: user.create_user,
-            create_time: user.create_time.map_or_else(|| "".to_string(), |dt| dt.to_string()),
+            create_time: user
+                .create_time
+                .map_or_else(|| "".to_string(), |dt| dt.to_string()),
             update_by: user.update_user.unwrap_or_default(),
-            update_time: user.update_time.map_or_else(|| "".to_string(), |dt| dt.to_string()),
+            update_time: user
+                .update_time
+                .map_or_else(|| "".to_string(), |dt| dt.to_string()),
             user_roles: roles,
         }
     }

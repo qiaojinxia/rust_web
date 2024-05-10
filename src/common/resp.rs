@@ -1,8 +1,8 @@
-use actix_web::{Error, HttpResponse, ResponseError};
 use actix_web::error::ErrorUnauthorized;
-use serde::{Serialize, Deserialize};
-use serde_json::json;
 use actix_web::http::StatusCode;
+use actix_web::{Error, HttpResponse, ResponseError};
+use serde::{Deserialize, Serialize};
+use serde_json::json;
 use thiserror::Error as MyError;
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -48,8 +48,8 @@ impl<T> ApiResponse<T> {
     }
 
     pub fn from_error<E>(error: E) -> ApiResponse<serde_json::Value>
-        where
-            E: ResponseError,
+    where
+        E: ResponseError,
     {
         ApiResponse {
             code: error.status_code().as_u16(),
@@ -57,7 +57,6 @@ impl<T> ApiResponse<T> {
             data: json!({}),
         }
     }
-
 }
 
 #[derive(MyError, Debug, Serialize, Deserialize)]
@@ -108,7 +107,6 @@ impl ResponseError for ApiError {
         };
         HttpResponse::build(status_code).json(error_response)
     }
-
 }
 
 #[macro_export]

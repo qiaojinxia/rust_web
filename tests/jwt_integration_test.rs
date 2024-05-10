@@ -18,24 +18,34 @@ fn test_encryption_decryption() {
     let claims = jwt::Claims {
         user_name: original_data.to_owned(),
         exp: 0, // 示例过期时间
-        role_codes: vec!["admin".to_string(), "admin1".to_string(), "admin2".to_string()],
+        role_codes: vec![
+            "admin".to_string(),
+            "admin1".to_string(),
+            "admin2".to_string(),
+        ],
     };
 
     // 加密原始数据
-    let encrypted_data = jwt::generate_jwt(claims.user_name.clone(), claims.role_codes.clone()).unwrap(); // 确保generate_jwt返回Result<String, Error>
+    let encrypted_data =
+        jwt::generate_jwt(claims.user_name.clone(), claims.role_codes.clone()).unwrap(); // 确保generate_jwt返回Result<String, Error>
 
     // 尝试解密
     let token_data = jwt::decode_jwt(&encrypted_data).expect("Decryption failed"); // 确保decode_jwt正确处理并返回TokenData<Claims>
     let decrypted_claims = token_data.claims;
 
     // 验证解密后的数据是否与原始数据相同
-    assert_eq!(claims.user_name, decrypted_claims.user_name, "Decrypted data does not match original");
-    assert_eq!(claims.role_codes, decrypted_claims.role_codes, "Decrypted data does not match original");
+    assert_eq!(
+        claims.user_name, decrypted_claims.user_name,
+        "Decrypted data does not match original"
+    );
+    assert_eq!(
+        claims.role_codes, decrypted_claims.role_codes,
+        "Decrypted data does not match original"
+    );
 }
 
 #[test]
 fn test_password_encryption() {
-    let password_hash =
-        auth::crypto::hash_password(Some("12345678".to_string())).unwrap(); // 假设这是一个外部函数，用于安全地散列密码
-    println!("{}",password_hash)
+    let password_hash = auth::crypto::hash_password(Some("12345678".to_string())).unwrap(); // 假设这是一个外部函数，用于安全地散列密码
+    println!("{}", password_hash)
 }

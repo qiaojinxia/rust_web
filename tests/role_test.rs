@@ -3,8 +3,8 @@ macro_rules! setup_test_app {
     () => {{
         app::init().await;
         let m = APP_STATE.get().unwrap();
-        let app_state = Data::new(AppState{
-            redis_conn:  m.redis_conn.clone(),
+        let app_state = Data::new(AppState {
+            redis_conn: m.redis_conn.clone(),
             mysql_conn: m.mysql_conn.clone(),
         });
         test::init_service(
@@ -13,22 +13,23 @@ macro_rules! setup_test_app {
                 .configure(routes::admin::sys_role_routes::api_config)
                 // .wrap(middleware::auth_middleware::JWTAuth)
                 .wrap(Logger::default())
-                .wrap(Logger::new("%a %D ms %{User-Agent}i"))
-        ).await
+                .wrap(Logger::new("%a %D ms %{User-Agent}i")),
+        )
+        .await
     }};
 }
 
 #[cfg(test)]
 mod tests {
-    use actix_web::{test, App, http};
+    use crate::tests::globals::APP_STATE;
     use actix_web::middleware::Logger;
-    use actix_web::web::{Data};
-    use my_gpt::{app, common, handlers};
+    use actix_web::web::Data;
+    use actix_web::{http, test, App};
     use my_gpt::config::globals;
     use my_gpt::config::globals::AppState;
-    use crate::tests::globals::APP_STATE;
     use my_gpt::dto::admin::sys_role_dto::RoleCreationDto;
     use my_gpt::dto::admin::sys_role_dto::RoleCreationResponseDto;
+    use my_gpt::{app, common, handlers};
     #[actix_rt::test]
     async fn test_create_role() {
         let app = setup_test_app!();
@@ -45,7 +46,8 @@ mod tests {
             .set_json(&role_creation_dto)
             .to_request();
 
-        let resp: common::resp::ApiResponse<RoleCreationResponseDto> = test::call_and_read_body_json(&app, req).await;
+        let resp: common::resp::ApiResponse<RoleCreationResponseDto> =
+            test::call_and_read_body_json(&app, req).await;
         assert_eq!(resp.code, http::StatusCode::OK);
 
         assert_eq!(resp.data.base.role_code, role_creation_dto.role_code);
@@ -56,11 +58,10 @@ mod tests {
     async fn test_get_roles() {
         let app = setup_test_app!();
 
-        let req = test::TestRequest::get()
-            .uri("/roles/12")
-            .to_request();
+        let req = test::TestRequest::get().uri("/roles/12").to_request();
 
-        let resp: common::resp::ApiResponse<RoleResponseDto> = test::call_and_read_body_json(&app, req).await;
+        let resp: common::resp::ApiResponse<RoleResponseDto> =
+            test::call_and_read_body_json(&app, req).await;
 
         assert!(!resp.data.role.is_none()); // 假设数据库中至少有一个角色
     }
@@ -83,11 +84,11 @@ mod tests {
             .set_json(&role_update_dto)
             .to_request();
 
-        let resp :common::resp::ApiResponse<RoleUpdateRespDto>= test::call_and_read_body_json(&app, req).await;
+        let resp: common::resp::ApiResponse<RoleUpdateRespDto> =
+            test::call_and_read_body_json(&app, req).await;
 
         assert_eq!(resp.data.role.unwrap().role_name, role_update_dto.role_name);
     }
-
 
     use my_gpt::dto::admin::sys_role_dto::RoleDeleteRespDto;
     #[actix_rt::test]
@@ -100,10 +101,10 @@ mod tests {
             .to_request();
 
         // 发送请求
-        let resp:common::resp::ApiResponse<RoleDeleteRespDto> = test::call_and_read_body_json(&app, req).await;
+        let resp: common::resp::ApiResponse<RoleDeleteRespDto> =
+            test::call_and_read_body_json(&app, req).await;
 
         // 验证响应状态码
         assert_eq!(resp.code, http::StatusCode::OK); // 确认我们收到了200 OK响应
     }
-
 }

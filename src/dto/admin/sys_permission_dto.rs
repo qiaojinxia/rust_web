@@ -1,6 +1,6 @@
+use crate::schemas::admin::sys_permission::Model;
 use serde::{Deserialize, Serialize};
 use validator::Validate;
-use crate::schemas::admin::sys_permission::Model;
 
 // DTOs for Request and Response
 #[derive(Deserialize, Validate)]
@@ -10,14 +10,14 @@ pub struct PermissionCreationDto {
     pub description: Option<String>,
     pub actions: Vec<String>,
     #[serde(rename = "menusId")]
-    pub menus_id:Option<Vec<i32>>,
+    pub menus_id: Option<Vec<i32>>,
     #[serde(rename = "apisId")]
-    pub apis_id:Option<Vec<i32>>,
+    pub apis_id: Option<Vec<i32>>,
     pub status: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct PermissionCreationRespDto{
+pub struct PermissionCreationRespDto {
     #[serde(flatten)]
     pub base: PermissionDto,
 }
@@ -27,7 +27,6 @@ pub struct PermissionRespDto {
     #[serde(flatten)]
     pub base: PermissionDto,
 }
-
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PermissionUpdateDto {
@@ -41,7 +40,6 @@ pub struct PermissionUpdateRespDto {
     pub base: Option<PermissionDetailsDto>,
 }
 
-
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PermissionDto {
     pub id: i32,
@@ -53,7 +51,6 @@ pub struct PermissionDto {
 pub struct PermissionDeleteRespDto {
     pub success: bool,
 }
-
 
 // 实现从Model到PermissionDto的转换
 impl From<Model> for PermissionDto {

@@ -1,19 +1,19 @@
+use crate::common::error::MyError;
+use crate::dto::admin::sys_menu_dto::{MenuCreateDto, MenuTreeResponseDto, MenuUpdateDto};
+use crate::schemas::admin;
+use crate::schemas::admin::prelude::SysMenu;
+use crate::schemas::admin::sys_menu;
+use chrono::Utc;
+use sea_orm::prelude::Expr;
+use sea_orm::ActiveValue::Set;
+use sea_orm::ColumnTrait;
+use sea_orm::QueryFilter;
+use sea_orm::{ActiveModelTrait, DatabaseConnection, DbErr, EntityTrait, PaginatorTrait};
+use serde::Deserialize;
+use serde_json::json;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::{Rc, Weak};
-use chrono::Utc;
-use sea_orm::{ActiveModelTrait, DatabaseConnection, DbErr, EntityTrait, PaginatorTrait};
-use sea_orm::ActiveValue::Set;
-use sea_orm::prelude::{Expr};
-use serde_json::{json};
-use crate::dto::admin::sys_menu_dto::{MenuCreateDto, MenuTreeResponseDto, MenuUpdateDto};
-use crate::schemas::admin::{sys_menu};
-use crate::schemas::admin::prelude::{SysMenu};
-use sea_orm::QueryFilter;
-use sea_orm::ColumnTrait;
-use serde::Deserialize;
-use crate::common::error::MyError;
-use crate::schemas::admin;
 
 //create_menu 创建菜单
 pub async fn create_menu(
@@ -21,46 +21,56 @@ pub async fn create_menu(
     menu_create_req: MenuCreateDto,
     create_user: String,
 ) -> Result<sys_menu::Model, MyError> {
-    let menu_name = menu_create_req.menu_name.
-        ok_or(MyError::ValidationError("menu_name is required".to_string()))?;
-    let route_path = menu_create_req.route_path.
-        ok_or(MyError::ValidationError("route_path is required".to_string()))?;
-    let parent_id = match menu_create_req.parent_id {
-        0 => None,
-        id => Some(id),
+    let parent_id = if menu_create_req.parent_id == 0 {
+        None
+    } else {
+        Some(menu_create_req.parent_id)
     };
+
     let mut menu = sys_menu::ActiveModel {
-        menu_name: Set(menu_name),
-        r#type: Set(admin::sea_orm_active_enums::Type::from_string(menu_create_req.menu_type.as_str())?),
-        route_path: Set(route_path),
-        route_name: Set(menu_create_req.route_name),
+        menu_name: Set(Some(menu_create_req.menu_name)),
+        r#type: Set(admin::sea_orm_active_enums::Type::from_string(
+            menu_create_req.menu_type.as_str(),
+        )?),
+        route_path: Set(Some(menu_create_req.route_path)),
+        route_name: Set(Some(menu_create_req.route_name)),
+        path_param: Set(menu_create_req.path_param),
         parent_id: Set(parent_id),
         create_user: Set(create_user),
-        status: Set(menu_create_req.status.parse::<i8>().unwrap()),
+        status: Set(menu_create_req.status.parse::<i8>().unwrap_or(1)),
         is_hidden: Set(i8::from(menu_create_req.is_hidden)),
         create_time: Set(Some(Utc::now())),
-        sort: Set(menu_create_req.order),
-        component: Set(Some(menu_create_req.component)),
+        sort: Set(Some(menu_create_req.order)), // Assuming order is present in MenuCreateDto
+        component: Set(menu_create_req.component),
+        constant: Set(i8::from(menu_create_req.constant)),
         ..Default::default()
     };
 
-    let mut meta = json!({"icon": menu_create_req.icon});
-
-    let meta_obj = meta.as_object_mut().
-        ok_or(MyError::ValidationError("Failed to create meta object".to_string()))?;
-
-    meta_obj.insert("icon_type".to_string(), json!(menu_create_req.icon_type));
+    let mut meta = json!({
+        "icon": menu_create_req.icon,
+        "icon_type": menu_create_req.icon_type,
+        "layout": menu_create_req.layout.unwrap_or_else(|| "base".to_string()),
+        "href": menu_create_req.href,
+        "keep_alive": menu_create_req.keep_alive,
+        "multi_tab": menu_create_req.multi_tab,
+        "fixed_index_in_tab": menu_create_req.fixed_index_in_tab,
+    });
 
     if let Some(i18n_key) = menu_create_req.i18n_key {
-        meta_obj.insert("i18n_key".to_string(), json!(i18n_key));
+        meta["i18n_key"] = json!(i18n_key);
     }
 
-    if let Some(layout) = menu_create_req.layout {
-        meta_obj.insert("layout".to_string(), json!(layout));
-    }else{
-        meta_obj.insert("layout".to_string(), json!("base".to_string()));
+    if let Some(active_menu) = menu_create_req.active_menu {
+        meta["active_menu"] = json!(active_menu);
     }
 
+    if let Some(query) = menu_create_req.query {
+        meta["query"] = json!(query);
+    }
+
+    if let Some(buttons) = menu_create_req.buttons {
+        meta["buttons"] = json!(buttons);
+    }
 
     menu.meta = Set(Some(meta));
 
@@ -68,26 +78,21 @@ pub async fn create_menu(
 }
 
 //get_menus 获取菜单列表
-pub async fn get_menus(
-    db: &DatabaseConnection,
-) -> Result<Vec<sys_menu::Model>, DbErr> {
+pub async fn get_menus(db: &DatabaseConnection) -> Result<Vec<sys_menu::Model>, DbErr> {
     SysMenu::find().all(db).await
 }
-
 
 // 修改get_menus函数以支持分页
 pub async fn get_menus_paged(
     db: &DatabaseConnection,
-    page: u64, // 当前页码，从1开始
+    page: u64,      // 当前页码，从1开始
     page_size: u64, // 每页条目数
 ) -> Result<(Vec<sys_menu::Model>, u64), MyError> {
     // 使用.find()开始构建查询
-    let paginator = SysMenu::find()
-        .paginate(db, page_size); // 设置每页条目数
+    let paginator = SysMenu::find().paginate(db, page_size); // 设置每页条目数
     let num_pages = paginator.num_pages().await?; // 获取总页数
 
-    let menus = paginator
-        .fetch_page(page - 1).await?; // 获取指定页的结果，页码从0开始，所以这里需要减1
+    let menus = paginator.fetch_page(page - 1).await?; // 获取指定页的结果，页码从0开始，所以这里需要减1
 
     Ok((menus, num_pages))
 }
@@ -100,78 +105,81 @@ pub async fn get_menu_by_id(
     SysMenu::find_by_id(menu_id).one(db).await
 }
 
-
-
 //update_menu 更新菜单
 pub async fn update_menu(
     db: &DatabaseConnection,
-    menu_id:i32,
-    menu_update_req:MenuUpdateDto,
-
+    menu_id: i32,
+    menu_update_req: MenuUpdateDto,
 ) -> Result<Option<sys_menu::Model>, MyError> {
-    let mut menu: sys_menu::ActiveModel =
-        SysMenu::find_by_id(menu_id).one(db).await?.unwrap().into();
+    // Attempt to retrieve the existing menu
+    let mut menu: sys_menu::ActiveModel = SysMenu::find_by_id(menu_id)
+        .one(db)
+        .await?
+        .ok_or(MyError::BadRequestError("Menu not found".to_string()))?
+        .into();
 
-    let mut meta = json!({"": ""});
-    // 记录meta的初始状态
-    let initial_meta = meta.clone();
-    let meta_obj = meta.as_object_mut().
-        ok_or(MyError::ValidationError("Failed to create meta object".to_string()))?;
-    if let Some(icon) = menu_update_req.icon {
-        meta_obj.insert("icon".to_string(), json!(icon));
-    }
-    if let Some(icon_type) = menu_update_req.icon_type {
-        meta_obj.insert("icon_type".to_string(), json!(icon_type));
-    }
-    if let Some(i18n_key) = menu_update_req.i18n_key {
-        meta_obj.insert("i18n_key".to_string(), json!(i18n_key));
-    }
-    if let Some(layout) = menu_update_req.layout {
-        meta_obj.insert("layout".to_string(), json!(layout));
-    }
-    if let Some(menu_name) = menu_update_req.menu_name {
-        menu.menu_name = Set(menu_name);
-    }
+    // Update fields if they are provided
+    menu.menu_name = Set(menu_update_req.menu_name);
+    menu.route_name = Set(menu_update_req.route_name);
+    menu.route_path = Set(Some(menu_update_req.route_path));
+    menu.parent_id = Set(if menu_update_req.parent_id == 0 {
+        None
+    } else {
+        Some(menu_update_req.parent_id)
+    });
+    menu.sort = Set(Some(menu_update_req.order));
+    menu.path_param = Set(menu_update_req.path_param);
+    menu.constant  = Set(i8::from(menu_update_req.constant));
     if let Some(component) = menu_update_req.component {
         menu.component = Set(Some(component));
     }
+
     if let Some(menu_type) = menu_update_req.menu_type {
-        menu.r#type = Set(admin::sea_orm_active_enums::Type::from_string(menu_type.as_str())?); // 需要转换为期望的数据类型
+        menu.r#type = Set(admin::sea_orm_active_enums::Type::from_string(
+            menu_type.as_str(),
+        )?);
     }
-    if let Some(route_name) = menu_update_req.route_name {
-        menu.route_name = Set(route_name);
+
+    if let Ok(status) = menu_update_req.status.parse() {
+        menu.status = Set(status);
     }
-    if let Some(route_path) = menu_update_req.route_path {
-        menu.route_path = Set(route_path);
+
+    menu.is_hidden = Set(i8::from(menu_update_req.is_hidden));
+
+    // Handle the meta object
+    let mut meta = json!({
+        "icon": menu_update_req.icon,
+        "icon_type": menu_update_req.icon_type,
+        "layout": menu_update_req.layout.unwrap_or_else(|| "base".to_string()),
+        "href": menu_update_req.href,
+        "keep_alive": menu_update_req.keep_alive,
+        "multi_tab": menu_update_req.multi_tab,
+        "fixed_index_in_tab": menu_update_req.fixed_index_in_tab,
+    });
+
+    if let Some(i18n_key) = menu_update_req.i18n_key {
+        meta["i18n_key"] = json!(i18n_key);
     }
-    menu.parent_id = Set(menu_update_req.parent_id);
-    if let Some(status) = menu_update_req.status {
-        menu.status = Set(status.parse().unwrap_or_default()); // 需要转换为期望的数据类型
+
+    if let Some(active_menu) = menu_update_req.active_menu {
+        meta["active_menu"] = json!(active_menu);
     }
-    if let Some(is_hidden) = menu_update_req.is_hidden {
-        menu.is_hidden = Set(is_hidden as i8); // 根据需要转换布尔值
+    if let Some(query) = menu_update_req.query {
+        meta["query"] = json!(query);
     }
-    if let Some(order) = menu_update_req.order {
-        menu.sort = Set(order);
+
+    if let Some(buttons) = menu_update_req.buttons {
+        meta["buttons"] = json!(buttons);
     }
-    if let Some(id) = menu_update_req.parent_id {
-        if id != 0 {
-            menu.parent_id = Set(Some(id));
-        } else {
-            menu.parent_id = Set(None); // or whatever logic you want when id is 0
-        }
-    }
-    if meta != initial_meta {
-        menu.meta = Set(Some(meta));
-    }
+
+    menu.meta = Set(Some(meta));
+
+    // Update the menu in the database
     menu.update(db).await.map(Some).map_err(MyError::from)
 }
 
 //delete_menu 删除菜单
-pub async fn delete_menu(
-    db: &DatabaseConnection,
-    menu_id: i32,
-) -> Result<u64, DbErr> {
+pub async fn delete_menu(db: &DatabaseConnection, menu_id: i32) -> Result<u64, DbErr> {
     // 首先，尝试更新所有引用该菜单ID作为parent_id的子菜单，
     // 将它们的parent_id设置为NULL（或者您可以选择删除这些子菜单）
     let _ = SysMenu::update_many()
@@ -192,10 +200,7 @@ pub async fn delete_menu(
         .map(|res| res.rows_affected)
 }
 
-pub async fn delete_menus(
-    db: &DatabaseConnection,
-    menu_ids: Vec<i32>,
-) -> Result<u64, DbErr> {
+pub async fn delete_menus(db: &DatabaseConnection, menu_ids: Vec<i32>) -> Result<u64, DbErr> {
     // 步骤1: 更新所有引用这些菜单ID作为parent_id的子菜单
     let update_children_result = SysMenu::update_many()
         .col_expr(sys_menu::Column::ParentId, Expr::value(None::<i32>))
@@ -215,8 +220,7 @@ pub async fn delete_menus(
     Ok(children_updated + menus_deleted)
 }
 
-
-#[derive( Clone, Deserialize)]
+#[derive(Clone, Deserialize)]
 pub struct MenuTree {
     pub id: i32,
     #[serde(rename = "pId")]
@@ -230,13 +234,13 @@ impl MenuTree {
         MenuTreeResponseDto {
             id: self.id,
             label: self.label.clone(),
-            children: self.children
-                .as_ref()
-                .map_or(vec![], |children| {
-                    children.borrow().iter().map(|child| {
-                        child.borrow().to_serializable()
-                    }).collect()
-                }),
+            children: self.children.as_ref().map_or(vec![], |children| {
+                children
+                    .borrow()
+                    .iter()
+                    .map(|child| child.borrow().to_serializable())
+                    .collect()
+            }),
         }
     }
 }
@@ -248,7 +252,7 @@ pub fn build_menu_tree(menus: Vec<sys_menu::Model>) -> Option<MenuTreeResponseDt
         let menu_tree_dto = Rc::new(RefCell::new(MenuTree {
             id: menu.id,
             parent_id: None,
-            label: menu.menu_name.clone(),
+            label: menu.menu_name.clone().unwrap(),
             children: Some(RefCell::new(Vec::new())),
         }));
         menu_map.insert(menu.id, Rc::clone(&menu_tree_dto));

@@ -7,7 +7,14 @@ impl Type {
             "1" => Ok(Type::Directory),
             "2" => Ok(Type::Menu),
             "3" => Ok(Type::Button),
-            _ => Err(MyError::InvalidType(s.to_string())),
+            _ => Err(MyError::InvalidTypeError(s.to_string())),
+        }
+    }
+    pub fn get_serial_number(&self) -> Option<&'static str> {
+        match self {
+            Type::Directory => Some("1"),
+            Type::Menu => Some("2"),
+            Type::Button => Some("3"),
         }
     }
 }
@@ -17,7 +24,7 @@ impl TargetType {
         match s {
             "1" => Ok(TargetType::Menu),
             "2" => Ok(TargetType::ApiGroup),
-            _ => Err(MyError::InvalidType(s.to_string())),
+            _ => Err(MyError::InvalidTypeError(s.to_string())),
         }
     }
 }

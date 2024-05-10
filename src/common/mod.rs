@@ -1,8 +1,6 @@
-
 pub mod auth;
 pub(crate) mod db;
-pub(crate) mod log;
-pub mod resp;
-pub(crate) mod redis;
 pub mod error;
-
+pub(crate) mod log;
+pub(crate) mod redis;
+pub mod resp;

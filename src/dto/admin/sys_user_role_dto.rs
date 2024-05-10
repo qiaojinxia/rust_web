@@ -1,6 +1,6 @@
+use crate::schemas::admin::sys_user_role::Model;
 use serde::{Deserialize, Serialize};
 use validator::Validate;
-use crate::schemas::admin::sys_user_role::Model;
 
 // DTO for assigning roles to a user
 #[derive(Debug, Serialize, Deserialize, Validate)]
@@ -16,7 +16,6 @@ pub struct UserRoleDto {
     pub role_id: i32,
     pub create_user: String,
 }
-
 
 // DTO for response after assigning roles to a user
 #[derive(Debug, Serialize, Deserialize)]
@@ -46,7 +45,6 @@ impl From<Model> for UserRoleDto {
 pub struct RemoveRoleRespDto {
     pub success: bool,
 }
-
 
 // #[derive(Debug, Serialize, Deserialize, FromQueryResult)]
 // pub struct UserDto {

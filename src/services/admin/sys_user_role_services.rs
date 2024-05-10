@@ -1,8 +1,10 @@
-use sea_orm::{DatabaseConnection, DbErr, EntityTrait, ColumnTrait, QueryFilter, JoinType, QuerySelect, RelationTrait};
-use sea_orm::ActiveValue::Set;
+use crate::schemas::admin::prelude::SysUserRole;
 use crate::schemas::admin::{sys_user, sys_user_role};
-use crate::schemas::admin::prelude::{SysUserRole};
-
+use sea_orm::ActiveValue::Set;
+use sea_orm::{
+    ColumnTrait, DatabaseConnection, DbErr, EntityTrait, JoinType, QueryFilter, QuerySelect,
+    RelationTrait,
+};
 
 //assign_roles_to_user，用于给用户分配角色
 pub async fn assign_roles_to_user(
@@ -37,7 +39,6 @@ pub async fn assign_roles_to_user(
     Ok(assigned_roles)
 }
 
-
 //get_user_roles 获取用户的角色
 pub async fn get_user_roles(
     db: &DatabaseConnection,
@@ -47,12 +48,13 @@ pub async fn get_user_roles(
         // 假设您已经在 sys_user_role 和 sys_user 之间定义了正确的关系
         .filter(sys_user::Column::Id.eq(user_id))
         .select_only()
-        .join(
-            JoinType::InnerJoin,
-            sys_user_role::Relation::SysUser.def(),
-        )
-        .columns([sys_user_role::Column::Id,sys_user_role::Column::RoleId,
-            sys_user_role::Column::UserId,sys_user_role::Column::CreateUser])
+        .join(JoinType::InnerJoin, sys_user_role::Relation::SysUser.def())
+        .columns([
+            sys_user_role::Column::Id,
+            sys_user_role::Column::RoleId,
+            sys_user_role::Column::UserId,
+            sys_user_role::Column::CreateUser,
+        ])
         .into_model::<sys_user_role::Model>()
         .all(db)
         .await

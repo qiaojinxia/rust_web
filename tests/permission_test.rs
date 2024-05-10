@@ -2,8 +2,8 @@ macro_rules! setup_test_app {
     () => {{
         app::init().await;
         let m = APP_STATE.get().unwrap();
-        let app_state = Data::new(AppState{
-            redis_conn:  m.redis_conn.clone(),
+        let app_state = Data::new(AppState {
+            redis_conn: m.redis_conn.clone(),
             mysql_conn: m.mysql_conn.clone(),
         });
         test::init_service(
@@ -12,22 +12,25 @@ macro_rules! setup_test_app {
                 .configure(routes::admin::sys_permission_routes::api_config)
                 // .wrap(middleware::auth_middleware::JWTAuth)
                 .wrap(Logger::default())
-                .wrap(Logger::new("%a %D ms %{User-Agent}i"))
-        ).await
+                .wrap(Logger::new("%a %D ms %{User-Agent}i")),
+        )
+        .await
     }};
 }
 
 #[cfg(test)]
 mod permission_tests {
-    use actix_web::{test, http};
-    use actix_web::web::Data;
-    use my_gpt::{app, common, handlers};
-    use my_gpt::config::globals::AppState;
-    use my_gpt::dto::admin::sys_permission_dto::{PermissionCreationDto, PermissionCreationRespDto,
-                                                 PermissionsRespDto, PermissionRespDto, PermissionUpdateDto, PermissionUpdateRespDto, PermissionDeleteRespDto};
-    use my_gpt::config::globals::APP_STATE;
-    use actix_web::App;
     use actix_web::middleware::Logger;
+    use actix_web::web::Data;
+    use actix_web::App;
+    use actix_web::{http, test};
+    use my_gpt::config::globals::AppState;
+    use my_gpt::config::globals::APP_STATE;
+    use my_gpt::dto::admin::sys_permission_dto::{
+        PermissionCreationDto, PermissionCreationRespDto, PermissionDeleteRespDto,
+        PermissionRespDto, PermissionUpdateDto, PermissionUpdateRespDto, PermissionsRespDto,
+    };
+    use my_gpt::{app, common, handlers};
 
     // 这里假设你已经有了setup_test_app宏，可以直接使用
     #[actix_rt::test]
@@ -44,20 +47,23 @@ mod permission_tests {
             .set_json(&permission_creation_dto)
             .to_request();
 
-        let resp: common::resp::ApiResponse<PermissionCreationRespDto> = test::call_and_read_body_json(&app, req).await;
+        let resp: common::resp::ApiResponse<PermissionCreationRespDto> =
+            test::call_and_read_body_json(&app, req).await;
         assert_eq!(resp.code, http::StatusCode::OK);
-        assert_eq!(resp.data.base.permission_code, permission_creation_dto.permission_code);
+        assert_eq!(
+            resp.data.base.permission_code,
+            permission_creation_dto.permission_code
+        );
     }
 
     #[actix_rt::test]
     async fn test_get_permissions() {
         let app = setup_test_app!();
 
-        let req = test::TestRequest::get()
-            .uri("/permissions")
-            .to_request();
+        let req = test::TestRequest::get().uri("/permissions").to_request();
 
-        let resp: common::resp::ApiResponse<PermissionsRespDto> = test::call_and_read_body_json(&app, req).await;
+        let resp: common::resp::ApiResponse<PermissionsRespDto> =
+            test::call_and_read_body_json(&app, req).await;
         assert!(!resp.data.base.is_empty()); // 假设数据库中至少有一个权限
     }
 
@@ -69,8 +75,9 @@ mod permission_tests {
             .uri("/permissions/1") // 假设ID为12的权限存在
             .to_request();
 
-        let resp: common::resp::ApiResponse<PermissionRespDto> = test::call_and_read_body_json(&app, req).await;
-        assert!(resp.data.base.id != 0 ); // 确认我们能获取到权限ID
+        let resp: common::resp::ApiResponse<PermissionRespDto> =
+            test::call_and_read_body_json(&app, req).await;
+        assert!(resp.data.base.id != 0); // 确认我们能获取到权限ID
     }
 
     #[actix_rt::test]
@@ -87,8 +94,12 @@ mod permission_tests {
             .set_json(&permission_update_dto)
             .to_request();
 
-        let resp: common::resp::ApiResponse<PermissionUpdateRespDto> = test::call_and_read_body_json(&app, req).await;
-        assert_eq!(resp.data.base.permission_code, permission_update_dto.permission_code.unwrap());
+        let resp: common::resp::ApiResponse<PermissionUpdateRespDto> =
+            test::call_and_read_body_json(&app, req).await;
+        assert_eq!(
+            resp.data.base.permission_code,
+            permission_update_dto.permission_code.unwrap()
+        );
     }
 
     #[actix_rt::test]
@@ -99,7 +110,8 @@ mod permission_tests {
             .uri("/permissions/1") // 假设ID为21的权限存在
             .to_request();
 
-        let resp: common::resp::ApiResponse<PermissionDeleteRespDto> = test::call_and_read_body_json(&app, req).await;
+        let resp: common::resp::ApiResponse<PermissionDeleteRespDto> =
+            test::call_and_read_body_json(&app, req).await;
         assert_eq!(resp.code, http::StatusCode::OK); // 确认我们收到了200 OK响应
     }
 }

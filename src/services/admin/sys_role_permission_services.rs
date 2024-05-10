@@ -1,10 +1,12 @@
-use chrono::Utc;
-use sea_orm::{DatabaseConnection, DbErr, EntityTrait, ColumnTrait, QueryFilter, JoinType, QuerySelect, RelationTrait};
-use sea_orm::ActiveValue::Set;
 use crate::common::auth::jwt::MenuInfo;
+use crate::schemas::admin::prelude::SysRolePermission;
 use crate::schemas::admin::{sys_menu, sys_role, sys_role_permission};
-use crate::schemas::admin::prelude::{SysRolePermission};
-
+use chrono::Utc;
+use sea_orm::ActiveValue::Set;
+use sea_orm::{
+    ColumnTrait, DatabaseConnection, DbErr, EntityTrait, JoinType, QueryFilter, QuerySelect,
+    RelationTrait,
+};
 
 //assign_permissions_to_role 为角色分配权限
 pub async fn assign_permissions_to_role(
@@ -39,7 +41,6 @@ pub async fn assign_permissions_to_role(
     Ok(inserted_permissions)
 }
 
-
 //get_role_permissions 获取角色的权限
 pub async fn get_role_permissions(
     db: &DatabaseConnection,
@@ -52,8 +53,12 @@ pub async fn get_role_permissions(
             JoinType::InnerJoin,
             sys_role_permission::Relation::SysRole.def(),
         )
-        .columns([sys_role_permission::Column::Id,sys_role_permission::Column::PermissionId,
-            sys_role_permission::Column::RoleId, sys_role_permission::Column::CreateUser])
+        .columns([
+            sys_role_permission::Column::Id,
+            sys_role_permission::Column::PermissionId,
+            sys_role_permission::Column::RoleId,
+            sys_role_permission::Column::CreateUser,
+        ])
         .into_model::<sys_role_permission::Model>()
         .all(db)
         .await
@@ -75,8 +80,6 @@ pub async fn remove_permission_from_role(
         .map(|res| res.rows_affected)
 }
 
-
-
 pub async fn get_menus_by_role_id(
     db: &DatabaseConnection,
     role_ids: Vec<i32>,
@@ -87,7 +90,6 @@ pub async fn get_menus_by_role_id(
             JoinType::InnerJoin,
             sys_role_permission::Relation::SysPermission.def(),
         )
-
         .select_only()
         .column_as(sys_menu::Column::Id, "id")
         .column_as(sys_menu::Column::MenuName, "menu_name")

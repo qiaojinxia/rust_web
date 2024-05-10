@@ -1,10 +1,10 @@
-use sea_orm::{error::DbErr, ConnectOptions, DatabaseConnection, Database };
-use std::time::Duration;
 use crate::config::cfg;
 use log::LevelFilter;
+use sea_orm::{error::DbErr, ConnectOptions, Database, DatabaseConnection};
+use std::time::Duration;
 
 // 函数来创建数据库连接池
-pub async fn init(db_config:&cfg::DatabaseConfig) -> Result<DatabaseConnection, DbErr> {
+pub async fn init(db_config: &cfg::DatabaseConfig) -> Result<DatabaseConnection, DbErr> {
     let mut opt = ConnectOptions::new(db_config.url.clone());
     opt.max_connections(db_config.max_connections)
         .min_connections(db_config.min_connections)

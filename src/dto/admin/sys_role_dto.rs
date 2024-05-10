@@ -19,11 +19,23 @@ pub struct RoleDto {
 /// Description: DTO for creating a role with field validations.
 #[derive(Debug, Serialize, Deserialize, Validate)]
 pub struct RoleCreationDto {
-    #[validate(length(min = 1, max = 16, message = "role_code must be between 1 and 16 characters long"))]
+    #[validate(length(
+        min = 1,
+        max = 16,
+        message = "role_code must be between 1 and 16 characters long"
+    ))]
     pub role_code: Option<String>,
-    #[validate(length(min = 1, max = 64, message = "role_name must be between 1 and 64 characters long"))]
+    #[validate(length(
+        min = 1,
+        max = 64,
+        message = "role_name must be between 1 and 64 characters long"
+    ))]
     pub role_name: Option<String>,
-    #[validate(length(min = 1, max = 512, message = "description must be between 1 and 512 characters long"))]
+    #[validate(length(
+        min = 1,
+        max = 512,
+        message = "description must be between 1 and 512 characters long"
+    ))]
     pub role_desc: Option<String>,
     pub status: i8,
 }
@@ -63,11 +75,23 @@ pub struct RoleResponseDto {
 /// Description: DTO for updating role information with field validations.
 #[derive(Debug, Serialize, Deserialize, Validate)]
 pub struct RoleUpdateDto {
-    #[validate(length(min = 1, max = 16, message = "role_code must be between 1 and 16 characters long"))]
+    #[validate(length(
+        min = 1,
+        max = 16,
+        message = "role_code must be between 1 and 16 characters long"
+    ))]
     pub role_code: Option<String>,
-    #[validate(length(min = 1, max = 64, message = "role_name must be between 1 and 64 characters long"))]
+    #[validate(length(
+        min = 1,
+        max = 64,
+        message = "role_name must be between 1 and 64 characters long"
+    ))]
     pub role_name: Option<String>,
-    #[validate(length(min = 1, max = 512, message = "description must be between 1 and 512 characters long"))]
+    #[validate(length(
+        min = 1,
+        max = 512,
+        message = "description must be between 1 and 512 characters long"
+    ))]
     pub description: Option<String>,
     pub status: Option<i8>,
 }
@@ -81,7 +105,6 @@ pub struct RoleUpdateRespDto {
     #[serde(flatten)]
     pub role: Option<RoleDto>,
 }
-
 
 /// Role Deletion Response DTO
 /// Method: DELETE
