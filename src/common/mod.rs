@@ -4,3 +4,4 @@ pub mod error;
 pub(crate) mod log;
 pub(crate) mod redis;
 pub mod resp;
+pub mod value;

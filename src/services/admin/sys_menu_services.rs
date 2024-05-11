@@ -224,7 +224,7 @@ pub async fn delete_menus(db: &DatabaseConnection, menu_ids: Vec<i32>) -> Result
 pub struct MenuTree {
     pub id: i32,
     #[serde(rename = "pId")]
-    pub parent_id: Option<Weak<RefCell<MenuTree>>>,
+    pub parent: Option<Weak<RefCell<MenuTree>>>,
     pub label: String,
     pub children: Option<RefCell<Vec<Rc<RefCell<MenuTree>>>>>,
 }
@@ -244,42 +244,54 @@ impl MenuTree {
         }
     }
 }
-pub fn build_menu_tree(menus: Vec<sys_menu::Model>) -> Option<MenuTreeResponseDto> {
-    let mut menu_map: HashMap<i32, Rc<RefCell<MenuTree>>> = HashMap::new();
-    let mut root: Option<Rc<RefCell<MenuTree>>> = None;
 
-    for menu in menus.iter() {
-        let menu_tree_dto = Rc::new(RefCell::new(MenuTree {
+pub fn build_menu_tree(menus: Vec<sys_menu::Model>) -> MenuTreeResponseDto {
+    let mut menu_map: HashMap<i32, Rc<RefCell<MenuTree>>> = HashMap::new();
+
+    // 创建一个虚拟根节点
+    let root = Rc::new(RefCell::new(MenuTree {
+        id: 0,  // 虚拟的根节点 ID
+        parent: None,
+        label: "root".to_string(),
+        children: Some(RefCell::new(Vec::new())),
+    }));
+
+    // 创建所有 MenuTree 实例
+    for menu in &menus {
+        let menu_tree = Rc::new(RefCell::new(MenuTree {
             id: menu.id,
-            parent_id: None,
-            label: menu.menu_name.clone().unwrap(),
+            parent: None,  // 父节点稍后设置
+            label: menu.menu_name.clone().unwrap_or_default(),
             children: Some(RefCell::new(Vec::new())),
         }));
-        menu_map.insert(menu.id, Rc::clone(&menu_tree_dto));
+        menu_map.insert(menu.id, Rc::clone(&menu_tree));
+        // 先将所有节点作为根节点的直接子节点（稍后调整）
+        root.borrow_mut().children.as_ref().unwrap().borrow_mut().push(Rc::clone(&menu_tree));
     }
 
-    for menu in menus.iter() {
+    // 根据 parent_id 设置真正的父子关系
+    for menu in &menus {
         if let Some(parent_id) = menu.parent_id {
-            if let Some(parent) = menu_map.get(&parent_id) {
-                let child = menu_map.get(&menu.id).unwrap();
+            if let (Some(child_tree), Some(parent_tree)) = (menu_map.get(&menu.id), menu_map.get(&parent_id)) {
+                // 设置子节点的 parent 引用
+                let weak_parent = Rc::downgrade(parent_tree);
+                child_tree.borrow_mut().parent = Some(weak_parent);
 
-                child.borrow_mut().parent_id = Some(Rc::downgrade(&parent));
+                // 将子节点加入到正确的父节点的 children 集合中
+                parent_tree.borrow_mut().children.as_ref().unwrap().borrow_mut().push(Rc::clone(child_tree));
 
-                if let Some(children) = parent.borrow_mut().children.as_mut() {
-                    children.borrow_mut().push(Rc::clone(&child));
-                } else {
-                    parent.borrow_mut().children = Some(RefCell::new(vec![Rc::clone(&child)]));
+                // 从根节点的直接子节点中移除，只保留不正确的父节点的子节点
+                if let Some(children) = root.borrow_mut().children.as_mut() {
+                    let mut children_borrow = children.borrow_mut();
+                    let pos = children_borrow.iter().position(|r| Rc::ptr_eq(r, child_tree));
+                    if let Some(idx) = pos {
+                        children_borrow.remove(idx);
+                    }
                 }
             }
-        } else {
-            if root.is_some() {
-                // Handle the case where there is more than one root. Options include logging an error or choosing the first one.
-                // For now, let's assume we only keep the first root.
-                continue;
-            }
-            root = Some(menu_map.get(&menu.id).unwrap().clone());
         }
     }
 
-    root.map(|tree_rc| tree_rc.borrow().to_serializable())
+    let x = root.borrow().to_serializable();
+    x
 }

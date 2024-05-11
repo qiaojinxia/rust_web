@@ -33,13 +33,14 @@ CREATE TABLE sys_role (
                           status TINYINT(1) NOT NULL DEFAULT 1 COMMENT '角色状态 1(enable)/2(disabled)'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
-
+-- 删除 sys_permission 表如果存在
+DROP TABLE IF EXISTS sys_permission;
 -- 权限表
 DROP TABLE IF EXISTS sys_permission;
     CREATE TABLE sys_permission (
                           id INT AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
-                          permission_name VARCHAR(128) NOT NULL,
-                          permission_code VARCHAR(64)  NOT NULL UNIQUE COMMENT '权限名称',
+                          permission_name VARCHAR(64) NOT NULL UNIQUE  COMMENT '权限名称',
+                          permission_code VARCHAR(64)  NOT NULL UNIQUE COMMENT '权限Code',
                           description VARCHAR(255) COMMENT '描述',
                           create_user VARCHAR(64) NOT NULL COMMENT '创建者',
                           create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',

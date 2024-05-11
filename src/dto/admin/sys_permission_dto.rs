@@ -4,15 +4,14 @@ use validator::Validate;
 
 // DTOs for Request and Response
 #[derive(Deserialize, Validate)]
+#[serde(rename_all = "camelCase")]
 pub struct PermissionCreationDto {
-    #[serde(rename = "permissionCode")]
+    pub permission_name: String,
     pub permission_code: String,
     pub description: Option<String>,
-    pub actions: Vec<String>,
-    #[serde(rename = "menusId")]
-    pub menus_id: Option<Vec<i32>>,
-    #[serde(rename = "apisId")]
-    pub apis_id: Option<Vec<i32>>,
+    pub action_codes: Option<Vec<String>>,
+    pub menus: Option<Vec<i32>>,
+    pub apis: Option<Vec<i32>>,
     pub status: String,
 }
 
@@ -64,11 +63,6 @@ impl From<Model> for PermissionDto {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct MenuDetail {
-    pub name: String,
-    pub id: i32,
-}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ApiDetail {
@@ -77,13 +71,14 @@ pub struct ApiDetail {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct PermissionDetailsDto {
     pub id: i32,
-    #[serde(rename = "permissionCode")]
+    pub permission_name: String,
     pub permission_code: String,
-    pub actions: Vec<String>,
+    pub action_codes: Vec<String>,
     pub description: String,
-    pub menus: Vec<MenuDetail>,
+    pub menus: Vec<String>,
     pub apis: Vec<ApiDetail>,
     pub status: String,
 }

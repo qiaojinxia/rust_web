@@ -26,12 +26,8 @@ async fn create_permission(
     let permission_req_data = permission_dto.into_inner();
     let result = sys_permission_services::create_permission(
         &*app_state.mysql_conn,
-        permission_req_data.permission_code,
-        permission_req_data.description.unwrap_or_default(), // Handle None as default empty string
-        "admin".to_string(), // Assuming 'admin' is the creator; ideally, this should be fetched dynamically
-        permission_req_data.status.parse::<i32>().unwrap(), // Ensure that status is appropriately parsed into an integer
-        permission_req_data.menus_id.unwrap_or_default(), // Handle None by using default, which is an empty vector
-        permission_req_data.apis_id.unwrap_or_default(), // Handle None by using default, which is an empty vector
+        permission_req_data,
+        "admin".to_string(),
     )
     .await
     .map(|permission| PermissionCreationRespDto {
