@@ -110,15 +110,15 @@ CREATE TABLE sys_permission_action (
 
 DROP TABLE IF EXISTS sys_permission_target;
 CREATE TABLE sys_permission_target (
-                          permission_id INT NOT NULL,
-                          target_id INT NOT NULL,
-                          target_type ENUM('MENU', 'API_GROUP') NOT NULL,
-                          PRIMARY KEY (permission_id, target_id, target_type),
-                          FOREIGN KEY (permission_id) REFERENCES sys_permission(id) ON DELETE CASCADE,
-                          INDEX idx_target_id (target_id),
-                          INDEX idx_target_type (target_type)
+                                       permission_id INT NOT NULL,
+                                       target_id INT NOT NULL,
+                                       target_type ENUM('MENU', 'API_GROUP') NOT NULL,
+                                       PRIMARY KEY (permission_id, target_id, target_type),
+                                       FOREIGN KEY (permission_id) REFERENCES sys_permission(id) ON DELETE CASCADE,
+                                       INDEX idx_permission_id (permission_id),
+                                       INDEX idx_target_id (target_id),
+                                       INDEX idx_target_type (target_type)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
 
 
 -- 用户角色关联表

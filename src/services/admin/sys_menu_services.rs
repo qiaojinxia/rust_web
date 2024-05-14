@@ -129,7 +129,7 @@ pub async fn update_menu(
     });
     menu.sort = Set(Some(menu_update_req.order));
     menu.path_param = Set(menu_update_req.path_param);
-    menu.constant  = Set(i8::from(menu_update_req.constant));
+    menu.constant = Set(i8::from(menu_update_req.constant));
     if let Some(component) = menu_update_req.component {
         menu.component = Set(Some(component));
     }
@@ -250,7 +250,7 @@ pub fn build_menu_tree(menus: Vec<sys_menu::Model>) -> MenuTreeResponseDto {
 
     // 创建一个虚拟根节点
     let root = Rc::new(RefCell::new(MenuTree {
-        id: 0,  // 虚拟的根节点 ID
+        id: 0, // 虚拟的根节点 ID
         parent: None,
         label: "root".to_string(),
         children: Some(RefCell::new(Vec::new())),
@@ -260,30 +260,45 @@ pub fn build_menu_tree(menus: Vec<sys_menu::Model>) -> MenuTreeResponseDto {
     for menu in &menus {
         let menu_tree = Rc::new(RefCell::new(MenuTree {
             id: menu.id,
-            parent: None,  // 父节点稍后设置
+            parent: None, // 父节点稍后设置
             label: menu.menu_name.clone().unwrap_or_default(),
             children: Some(RefCell::new(Vec::new())),
         }));
         menu_map.insert(menu.id, Rc::clone(&menu_tree));
         // 先将所有节点作为根节点的直接子节点（稍后调整）
-        root.borrow_mut().children.as_ref().unwrap().borrow_mut().push(Rc::clone(&menu_tree));
+        root.borrow_mut()
+            .children
+            .as_ref()
+            .unwrap()
+            .borrow_mut()
+            .push(Rc::clone(&menu_tree));
     }
 
     // 根据 parent_id 设置真正的父子关系
     for menu in &menus {
         if let Some(parent_id) = menu.parent_id {
-            if let (Some(child_tree), Some(parent_tree)) = (menu_map.get(&menu.id), menu_map.get(&parent_id)) {
+            if let (Some(child_tree), Some(parent_tree)) =
+                (menu_map.get(&menu.id), menu_map.get(&parent_id))
+            {
                 // 设置子节点的 parent 引用
                 let weak_parent = Rc::downgrade(parent_tree);
                 child_tree.borrow_mut().parent = Some(weak_parent);
 
                 // 将子节点加入到正确的父节点的 children 集合中
-                parent_tree.borrow_mut().children.as_ref().unwrap().borrow_mut().push(Rc::clone(child_tree));
+                parent_tree
+                    .borrow_mut()
+                    .children
+                    .as_ref()
+                    .unwrap()
+                    .borrow_mut()
+                    .push(Rc::clone(child_tree));
 
                 // 从根节点的直接子节点中移除，只保留不正确的父节点的子节点
                 if let Some(children) = root.borrow_mut().children.as_mut() {
                     let mut children_borrow = children.borrow_mut();
-                    let pos = children_borrow.iter().position(|r| Rc::ptr_eq(r, child_tree));
+                    let pos = children_borrow
+                        .iter()
+                        .position(|r| Rc::ptr_eq(r, child_tree));
                     if let Some(idx) = pos {
                         children_borrow.remove(idx);
                     }

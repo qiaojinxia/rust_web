@@ -29,8 +29,8 @@ pub struct PermissionRespDto {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PermissionUpdateDto {
-    pub permission_code: Option<String>,
-    pub description: Option<String>,
+    #[serde(flatten)]
+    pub base: PermissionDto,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -40,10 +40,15 @@ pub struct PermissionUpdateRespDto {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct PermissionDto {
-    pub id: i32,
-    pub permission_code: String,
-    pub description: String,
+    pub permission_name: Option<String>,
+    pub permission_code: Option<String>,
+    pub description: Option<String>,
+    pub action_codes: Option<Vec<String>>,
+    pub menus: Option<Vec<i32>>,
+    pub apis: Option<Vec<i32>>,
+    pub status: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -55,14 +60,17 @@ pub struct PermissionDeleteRespDto {
 impl From<Model> for PermissionDto {
     fn from(model: Model) -> Self {
         PermissionDto {
-            id: model.id,
-            permission_code: model.permission_code,
+            permission_name: Some(model.permission_name),
+            permission_code: Some(model.permission_code),
             // 如果Model中的description是None，则转换为一个空字符串
-            description: model.description.unwrap_or_default(),
+            description: model.description,
+            action_codes: None,
+            menus: None,
+            apis: None,
+            status: None,
         }
     }
 }
-
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ApiDetail {

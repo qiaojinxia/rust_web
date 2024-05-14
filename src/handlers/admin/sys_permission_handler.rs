@@ -92,8 +92,7 @@ async fn update_permission(
     let result = sys_permission_services::update_permission(
         &*app_state.mysql_conn,
         permission_id,
-        permission_update_req_data.permission_code,
-        permission_update_req_data.description,
+        permission_update_req_data.base,
         "admin".to_string(),
     )
     .await

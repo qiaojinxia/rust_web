@@ -7,6 +7,8 @@ pub enum MyError {
     InvalidTypeError(String),
     AuthError(String),
     BadRequestError(String),
+    NotFound(String),
+    ConversionError(String),
     // 其他错误类型...
 }
 
@@ -24,6 +26,8 @@ impl std::fmt::Display for MyError {
             MyError::InvalidTypeError(ref msg) => write!(f, "Invalid type error: {}", msg),
             MyError::AuthError(ref msg) => write!(f, "Auth error : {}", msg),
             MyError::BadRequestError(ref err) => write!(f, "Bad request error: {}", err),
+            MyError::NotFound(ref err) => write!(f, "NotFound  error: {}", err),
+            MyError::ConversionError(ref err) => write!(f, "ConversionError  error: {}", err),
         }
     }
 }

@@ -1,8 +1,8 @@
+use crate::common::value::{extract_bool, extract_i32, extract_json, extract_string};
 use crate::schemas::admin::sys_menu::Model;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use validator::{Validate, ValidationError};
-use crate::common::value::{extract_bool, extract_i32, extract_json, extract_string};
 
 // 定义一个结构体来表示菜单按钮
 #[derive(Debug, Serialize, Deserialize)]
@@ -111,8 +111,8 @@ impl From<Model> for MenuBaseRespDto {
             path_param: model.path_param,
             order: model.sort.unwrap_or(0),
             constant: model.constant == 1,
-            icon_type: extract_string(&meta,"icon_type"),
-            icon: extract_string(&meta,"icon"),
+            icon_type: extract_string(&meta, "icon_type"),
+            icon: extract_string(&meta, "icon"),
             buttons: meta.get("buttons").and_then(|v| {
                 v.as_array().map(|a| {
                     a.iter()
@@ -129,14 +129,14 @@ impl From<Model> for MenuBaseRespDto {
             }),
             children: None,
             // 下面是 MenuPropsOfRoute 的字段
-            i18n_key: Some(extract_string(&meta,"i18n_key")),
-            keep_alive: extract_bool(&meta,"keep_alive").unwrap_or(false),
-            href: Some(extract_string(&meta,"href")),
+            i18n_key: Some(extract_string(&meta, "i18n_key")),
+            keep_alive: extract_bool(&meta, "keep_alive").unwrap_or(false),
+            href: Some(extract_string(&meta, "href")),
             hide_in_menu: model.is_hidden == 1,
-            active_menu: Some(extract_string(&meta,"active_menu")),
-            multi_tab: extract_bool(&meta,"multi_tab").unwrap_or(false),
-            fixed_index_in_tab: extract_i32(&meta,"fixed_index_in_tab"),
-            query: extract_json(&meta,"query"),
+            active_menu: Some(extract_string(&meta, "active_menu")),
+            multi_tab: extract_bool(&meta, "multi_tab").unwrap_or(false),
+            fixed_index_in_tab: extract_i32(&meta, "fixed_index_in_tab"),
+            query: extract_json(&meta, "query"),
             status: model.status.to_string(),
         }
     }

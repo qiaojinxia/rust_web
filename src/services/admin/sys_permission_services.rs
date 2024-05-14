@@ -1,7 +1,10 @@
 use crate::common::error::MyError;
-use crate::dto::admin::sys_permission_dto::{ApiDetail, PermissionCreationDto, PermissionDetailsDto};
+use crate::dto::admin::sys_permission_dto::{ApiDetail, PermissionCreationDto, PermissionDetailsDto, PermissionDto};
 use crate::schemas::admin::prelude::{SysPermission, SysRolePermission};
-use crate::schemas::admin::{sea_orm_active_enums, sys_api, sys_menu, sys_permission, sys_permission_action, sys_permission_target, sys_role_permission};
+use crate::schemas::admin::{
+    sea_orm_active_enums, sys_api, sys_menu, sys_permission, sys_permission_action,
+    sys_permission_target, sys_role_permission,
+};
 use chrono::Utc;
 use sea_orm::prelude::Expr;
 use sea_orm::sea_query::{Alias, Query};
@@ -13,47 +16,16 @@ use sea_orm::{
     TransactionTrait,
 };
 
-async fn insert_permission_target(
-    transaction: &DatabaseTransaction,
-    permission_id: i32,
-    target_id: i32,
-    target_type: sea_orm_active_enums::TargetType,
-) -> Result<(), MyError> {
-    let permission_target = sys_permission_target::ActiveModel {
-        permission_id: Set(permission_id),
-        target_id: Set(target_id),
-        target_type: Set(target_type),
-        ..Default::default()
-    };
-    permission_target.insert(transaction).await?;
-    Ok(())
-}
-
-async fn insert_permission_action_target(
-    transaction: &DatabaseTransaction,
-    permission_id: i32,
-    action_code: String,
-) -> Result<(), MyError> {
-    let permission_target =  sys_permission_action::ActiveModel {
-        permission_id: Set(permission_id),
-        action_code: Set(sea_orm_active_enums::ActionCode::from_string(action_code.as_str())?), // 假设ActionCode是一个枚举
-        ..Default::default()
-    };
-    permission_target.insert(transaction).await?;
-    Ok(())
-}
-
 
 //create_permission 创建权限
 pub async fn create_permission(
     db: &DatabaseConnection,
     permission_creation_dto: PermissionCreationDto,
     create_user: String,
-
 ) -> Result<sys_permission::Model, MyError> {
     let transaction = db.begin().await?;
     let permission = sys_permission::ActiveModel {
-        permission_name:Set(permission_creation_dto.permission_name),
+        permission_name: Set(permission_creation_dto.permission_name),
         permission_code: Set(permission_creation_dto.permission_code),
         description: Set(permission_creation_dto.description),
         create_user: Set(create_user),
@@ -63,32 +35,65 @@ pub async fn create_permission(
     };
     let inserted_permission = permission.insert(&transaction).await?;
 
-    // Insert permission targets for menus
-    if let Some(menu_ids) = permission_creation_dto.menus {
-        for menu_id in menu_ids {
-            insert_permission_target(
-                &transaction,
-                inserted_permission.id,
-                menu_id,
-                sea_orm_active_enums::TargetType::Menu,
-            ).await?;
-        }
-    }
-
-    // Insert permission targets for menus
-    if let Some(action_codes) = permission_creation_dto.action_codes {
-        for action_code in action_codes {
-            insert_permission_action_target(
-                &transaction,
-                inserted_permission.id,
-                action_code,
-            ).await?;
-        }
-    }
+    insert_permission_targets_for_menus(&transaction, inserted_permission.id, permission_creation_dto.menus).await?;
+    insert_permission_action_codes(&transaction, inserted_permission.id, permission_creation_dto.action_codes).await?;
 
     transaction.commit().await?;
     Ok(inserted_permission)
 }
+
+
+
+async fn insert_permission_targets_for_menus(
+    transaction: &DatabaseTransaction,
+    permission_id: i32,
+    menu_ids: Option<Vec<i32>>,
+) -> Result<(), MyError> {
+    if let Some(menu_ids) = menu_ids {
+        let menu_targets: Vec<sys_permission_target::ActiveModel> = menu_ids
+            .into_iter()
+            .map(|menu_id| sys_permission_target::ActiveModel {
+                permission_id: Set(permission_id),
+                target_id: Set(menu_id),
+                target_type: Set(sea_orm_active_enums::TargetType::Menu),
+                ..Default::default()
+            })
+            .collect();
+
+        sys_permission_target::Entity::insert_many(menu_targets)
+            .exec(transaction)
+            .await?;
+    }
+    Ok(())
+}
+
+async fn insert_permission_action_codes(
+    transaction: &DatabaseTransaction,
+    permission_id: i32,
+    action_codes: Option<Vec<String>>,
+) -> Result<(), MyError> {
+    if let Some(action_codes) = action_codes {
+        let mut action_targets = Vec::new();
+        for action_code in action_codes {
+            match sea_orm_active_enums::ActionCode::from_string(action_code.as_str()) {
+                Ok(parsed_code) => {
+                    action_targets.push(sys_permission_action::ActiveModel {
+                        permission_id: Set(permission_id),
+                        action_code: Set(parsed_code),
+                        ..Default::default()
+                    });
+                }
+                Err(e) => return Err(MyError::ConversionError(e.to_string())), // Handle the conversion error appropriately
+            }
+        }
+
+        sys_permission_action::Entity::insert_many(action_targets)
+            .exec(transaction)
+            .await?;
+    }
+    Ok(())
+}
+
 
 //get_permission_by_id 获取单个权限
 pub async fn get_permission_by_id(
@@ -98,30 +103,79 @@ pub async fn get_permission_by_id(
     SysPermission::find_by_id(permission_id).one(db).await
 }
 
-//update_permission 更新权限
 pub async fn update_permission(
     db: &DatabaseConnection,
     permission_id: i32,
-    permission_code: Option<String>,
-    description: Option<String>,
+    permission_update_dto: PermissionDto,
     update_user: String,
-) -> Result<Option<sys_permission::Model>, DbErr> {
-    let mut permission: sys_permission::ActiveModel = SysPermission::find_by_id(permission_id)
+) -> Result<Option<sys_permission::Model>, MyError> {
+    let transaction = db.begin().await?;
+
+    let permission = SysPermission::find_by_id(permission_id)
         .one(db)
         .await?
-        .unwrap()
-        .into();
+        .ok_or(MyError::NotFound("db select error".to_string()))?;
 
-    if let Some(p_code) = permission_code {
-        permission.permission_code = Set(p_code);
+    let mut active_permission: sys_permission::ActiveModel = permission.into();
+    if let Some(permission_name) = permission_update_dto.permission_name {
+        active_permission.permission_name = Set(permission_name);
     }
-    if let Some(dsc) = description {
-        permission.description = Set(Some(dsc));
+    if let Some(permission_code) = permission_update_dto.permission_code {
+        active_permission.permission_code = Set(permission_code);
+    }
+    if let Some(description) = permission_update_dto.description {
+        active_permission.description = Set(Some(description));
     }
 
-    permission.update_user = Set(Some(update_user));
+    if let Some(status) = permission_update_dto.status {
+        active_permission.status = Set(status.parse().unwrap());
+    }
+    active_permission.update_user = Set(Some(update_user));
+    active_permission.update_time = Set(Some(Utc::now()));
 
-    permission.update(db).await.map(Some)
+    let updated_permission = active_permission.update(&transaction).await?;
+
+    if let Some(_) = permission_update_dto.menus {
+        delete_permission_targets(&transaction, permission_id,sea_orm_active_enums::TargetType::Menu).await?;
+        insert_permission_targets_for_menus(&transaction, permission_id, permission_update_dto.menus).await?;
+    }
+
+    if let Some(_) = permission_update_dto.action_codes {
+        delete_permission_action_codes(&transaction, permission_id).await?;
+        insert_permission_action_codes(&transaction, permission_id, permission_update_dto.action_codes).await?;
+    }
+
+    transaction.commit().await?;
+    Ok(Some(updated_permission))
+}
+
+
+//delete_permission_targets 删除关联菜单
+async fn delete_permission_targets(
+    transaction: &DatabaseTransaction,
+    permission_id: i32,
+    target_type: sea_orm_active_enums::TargetType,
+) -> Result<(), MyError> {
+    sys_permission_target::Entity::delete_many()
+        .filter(sys_permission_target::Column::PermissionId.eq(permission_id))
+        .filter(sys_permission_target::Column::TargetType.eq(target_type))
+        .exec(transaction)
+        .await?;
+
+    Ok(())
+}
+
+//delete_permission_action_targets 删除关联操作权限
+async fn delete_permission_action_codes(
+    transaction: &DatabaseTransaction,
+    permission_id: i32,
+) -> Result<(), MyError> {
+    sys_permission_action::Entity::delete_many()
+        .filter(sys_permission_action::Column::PermissionId.eq(permission_id))
+        .exec(transaction)
+        .await?;
+
+    Ok(())
 }
 
 //delete_permission 删除权限
@@ -129,8 +183,7 @@ pub async fn delete_permission(db: &DatabaseConnection, permission_id: i32) -> R
     // 开始一个事务
     let txn = db.begin().await?;
 
-    // 接着，更新所有引用该权限ID作为permission_id的sys_role_permission记录，
-    // 将它们的permission_id设置为NULL
+    // 更新所有引用该权限ID作为permission_id的sys_role_permission记录，将它们的permission_id设置为NULL
     let _ = SysRolePermission::update_many()
         .col_expr(
             sys_role_permission::Column::PermissionId,
@@ -140,7 +193,19 @@ pub async fn delete_permission(db: &DatabaseConnection, permission_id: i32) -> R
         .exec(&txn)
         .await?;
 
-    // 然后，尝试删除目标权限项
+    // 删除关联的 sys_permission_action 记录
+    let _ = sys_permission_action::Entity::delete_many()
+        .filter(sys_permission_action::Column::PermissionId.eq(permission_id))
+        .exec(&txn)
+        .await?;
+
+    // 删除关联的 sys_permission_target 记录
+    let _ = sys_permission_target::Entity::delete_many()
+        .filter(sys_permission_target::Column::PermissionId.eq(permission_id))
+        .exec(&txn)
+        .await?;
+
+    // 删除目标权限项
     let permission = sys_permission::ActiveModel {
         id: Set(permission_id),
         ..Default::default()
@@ -156,6 +221,7 @@ pub async fn delete_permission(db: &DatabaseConnection, permission_id: i32) -> R
 
     Ok(rows_affected)
 }
+
 
 pub async fn get_total_permissions_count(db: &DatabaseConnection) -> Result<i64, DbErr> {
     let mut query = Query::select();
@@ -195,7 +261,7 @@ pub async fn get_paginated_permissions_with_menus_apis(
         (sys_permission::Entity, sys_permission::Column::Status),
     ])
         .expr_as(
-            Expr::cust("GROUP_CONCAT(DISTINCT CASE WHEN target_type = 'MENU' THEN CONCAT(sys_menu.menu_name, ':', sys_menu.id) END SEPARATOR ',')"),
+            Expr::cust("GROUP_CONCAT(DISTINCT sys_menu.id SEPARATOR ',')"),
             Alias::new("menus")
         )
         .expr_as(
@@ -247,11 +313,12 @@ pub async fn get_paginated_permissions_with_menus_apis(
             let menus: String = row.try_get_by("menus").unwrap_or_default();
             let apis: String = row.try_get_by("apis").unwrap_or_default();
             let action_codes: String = row.try_get_by("action_codes").unwrap_or_default();
-            let action_codes_list = action_codes.split(',')
+            let action_codes_list = action_codes
+                .split(',')
                 .filter_map(|s| {
                     let s = s.trim();
                     if !s.is_empty() {
-                        let s =  sea_orm_active_enums::ActionCode::from_string_origin(s).ok()?;
+                        let s = sea_orm_active_enums::ActionCode::from_string_origin(s).ok()?;
                         Some(s.to_string())
                     } else {
                         None
@@ -261,15 +328,9 @@ pub async fn get_paginated_permissions_with_menus_apis(
             // Parse the menus and apis fields into Vecs of (name, id)
             let menu_details: Vec<String> = menus
                 .split(',')
-                .filter_map(|s| {
-                    let parts: Vec<&str> = s.split(':').collect();
-                    if parts.len() == 2 {
-                        Some( parts[1].parse().unwrap_or_default())
-                    } else {
-                        None
-                    }
-                })
+                .filter_map(|s| s.parse().ok())
                 .collect();
+
 
             let api_details: Vec<ApiDetail> = apis
                 .split(',')
@@ -291,7 +352,7 @@ pub async fn get_paginated_permissions_with_menus_apis(
                 id: permission_id,
                 permission_name,
                 permission_code,
-                action_codes:action_codes_list,
+                action_codes: action_codes_list,
                 description,
                 menus: menu_details,
                 apis: api_details,
