@@ -27,6 +27,18 @@ pub struct PermissionRespDto {
     pub base: PermissionDto,
 }
 
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PermissionSimpleRespDto {
+    pub id : i32,
+    pub permission_name: String,
+    pub permission_code: String,
+    pub status: String,
+}
+
+
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PermissionUpdateDto {
     #[serde(flatten)]

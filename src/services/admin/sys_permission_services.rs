@@ -103,12 +103,25 @@ pub async fn get_permission_by_id(
     SysPermission::find_by_id(permission_id).one(db).await
 }
 
+
+//get_permission_by_id 获取所有权限
+pub async fn get_permissions(
+    db: &DatabaseConnection,
+) -> Result<Vec<sys_permission::Model>, DbErr> {
+// 使用`find_all`方法获取所有权限记录
+    let permissions = sys_permission::Entity::find()
+        .all(db)
+        .await?;
+    Ok(permissions)
+}
+
+
 pub async fn update_permission(
     db: &DatabaseConnection,
     permission_id: i32,
     permission_update_dto: PermissionDto,
     update_user: String,
-) -> Result<Option<sys_permission::Model>, MyError> {
+) -> Result<(), MyError> {
     let transaction = db.begin().await?;
 
     let permission = SysPermission::find_by_id(permission_id)
@@ -116,37 +129,46 @@ pub async fn update_permission(
         .await?
         .ok_or(MyError::NotFound("db select error".to_string()))?;
 
+    let mut is_modified = false;
+
     let mut active_permission: sys_permission::ActiveModel = permission.into();
     if let Some(permission_name) = permission_update_dto.permission_name {
         active_permission.permission_name = Set(permission_name);
+        is_modified = true;
     }
     if let Some(permission_code) = permission_update_dto.permission_code {
         active_permission.permission_code = Set(permission_code);
+        is_modified = true;
     }
     if let Some(description) = permission_update_dto.description {
         active_permission.description = Set(Some(description));
+        is_modified = true;
     }
-
     if let Some(status) = permission_update_dto.status {
         active_permission.status = Set(status.parse().unwrap());
+        is_modified = true;
     }
-    active_permission.update_user = Set(Some(update_user));
-    active_permission.update_time = Set(Some(Utc::now()));
 
-    let updated_permission = active_permission.update(&transaction).await?;
+    if is_modified {
+        active_permission.update_user = Set(Some(update_user));
+        active_permission.update_time = Set(Some(Utc::now()));
+        active_permission.update(&transaction).await?;
+    }
 
     if let Some(_) = permission_update_dto.menus {
         delete_permission_targets(&transaction, permission_id,sea_orm_active_enums::TargetType::Menu).await?;
         insert_permission_targets_for_menus(&transaction, permission_id, permission_update_dto.menus).await?;
     }
 
-    if let Some(_) = permission_update_dto.action_codes {
-        delete_permission_action_codes(&transaction, permission_id).await?;
-        insert_permission_action_codes(&transaction, permission_id, permission_update_dto.action_codes).await?;
+    if let Some(ref actions_codes) = permission_update_dto.action_codes {
+        if !actions_codes.is_empty() {
+            delete_permission_action_codes(&transaction, permission_id).await?;
+            insert_permission_action_codes(&transaction, permission_id, permission_update_dto.action_codes).await?;
+        }
     }
 
     transaction.commit().await?;
-    Ok(Some(updated_permission))
+    Ok(())
 }
 
 
@@ -331,7 +353,6 @@ pub async fn get_paginated_permissions_with_menus_apis(
                 .filter_map(|s| s.parse().ok())
                 .collect();
 
-
             let api_details: Vec<ApiDetail> = apis
                 .split(',')
                 .filter_map(|s| {
@@ -346,7 +367,6 @@ pub async fn get_paginated_permissions_with_menus_apis(
                     }
                 })
                 .collect();
-
             // Construct your DTO
             PermissionDetailsDto {
                 id: permission_id,

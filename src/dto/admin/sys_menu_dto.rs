@@ -2,35 +2,14 @@ use crate::common::value::{extract_bool, extract_i32, extract_json, extract_stri
 use crate::schemas::admin::sys_menu::Model;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use validator::{Validate, ValidationError};
+use validator::{Validate};
+use crate::dto::admin::common_dto::{validate_menu_type, validate_status};
 
 // 定义一个结构体来表示菜单按钮
 #[derive(Debug, Serialize, Deserialize)]
 pub struct MenuButton {
     code: String, // 按钮代码
     desc: String, // 按钮描述
-}
-
-fn validate_menu_type(status: &str) -> Result<(), ValidationError> {
-    match status {
-        "1" | "2" => Ok(()),
-        _ => {
-            let mut error = ValidationError::new("invalid_menu_type");
-            error.message = Some("The menuType must be either '1' or '2'.".into());
-            Err(error)
-        }
-    }
-}
-
-fn validate_status(status: &str) -> Result<(), ValidationError> {
-    match status {
-        "1" | "2" => Ok(()),
-        _ => {
-            let mut error = ValidationError::new("invalid_status");
-            error.message = Some("The status must be either '1' or '2'.".into());
-            Err(error)
-        }
-    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Validate)]
@@ -92,7 +71,7 @@ pub struct MenuBaseRespDto {
     pub path_param: Option<String>,
     pub multi_tab: bool,
     pub fixed_index_in_tab: Option<i32>,
-    pub query: Option<Value>, // 使用 Value 来处理任意 JSON 结构
+    pub query: Option<Value>,
     pub status: String,
 }
 

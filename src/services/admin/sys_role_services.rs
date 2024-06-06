@@ -1,58 +1,154 @@
-use crate::dto::admin::sys_role_dto;
 use crate::schemas::admin::prelude::SysRole;
-use crate::schemas::admin::sys_role;
+use crate::schemas::admin::{sys_role, sys_role_permission};
 use sea_orm::ActiveValue::Set;
-use sea_orm::QueryFilter;
+use sea_orm::{QueryFilter, QuerySelect, TransactionTrait};
 use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, DbErr, EntityTrait};
+use crate::dto::admin::common_dto::PaginationResponseDto;
+use crate::dto::admin::sys_role_dto::{RoleCreationDto, RoleCreationResponseDto, RoleDto, RoleUpdateDto};
+use sea_orm::PaginatorTrait;
+
 //create_role 创建角色
 pub async fn create_role(
     db: &DatabaseConnection,
     create_user: String,
-    role_create_info: sys_role_dto::RoleCreationDto,
-) -> Result<sys_role::Model, DbErr> {
-    let mut role = sys_role::ActiveModel {
+    role_create_info: RoleCreationDto,
+) -> Result<RoleCreationResponseDto, DbErr> {
+    // Start a transaction
+    let txn = db.begin().await?;
+
+    // Insert the role
+    let role = sys_role::ActiveModel {
+        role_name: Set(role_create_info.role_name.clone()),
+        description: Set(Some(role_create_info.role_desc.clone())),
+        role_code: Set(role_create_info.role_code.clone()),
+        status: Set(role_create_info.status.parse().unwrap()),
+        create_user: Set(create_user.clone()),
         ..Default::default()
     };
 
-    if let Some(rn) = role_create_info.role_name {
-        role.role_name = Set(rn);
-    }
-    if let Some(dsc) = role_create_info.role_desc {
-        role.description = Set(Some(dsc));
-    }
-    if let Some(code) = role_create_info.role_code {
-        role.role_code = Set(code);
+    let inserted_role = role.insert(&txn).await?;
+
+    // Insert role permissions
+    if let Some(permission_ids) = role_create_info.permission_ids {
+        for permission_id in permission_ids {
+            let role_permission = sys_role_permission::ActiveModel {
+                role_id: Set(inserted_role.id),
+                permission_id: Set(permission_id),
+                create_user: Set(create_user.clone()),
+                ..Default::default()
+            };
+
+            role_permission.insert(&txn).await?;
+        }
     }
 
-    role.status = Set(role_create_info.status);
+    // Commit the transaction
+    txn.commit().await?;
 
-    role.create_user = Set(create_user);
+    // Query inserted role with permissions
+    let permissions = sys_role_permission::Entity::find()
+        .filter(sys_role_permission::Column::RoleId.eq(inserted_role.id))
+        .all(db)
+        .await?;
 
-    role.insert(db).await
+    let permission_ids = permissions
+        .into_iter()
+        .map(|rp| rp.permission_id)
+        .collect::<Vec<i32>>();
+
+    let role_dto = RoleDto {
+        id: Some(inserted_role.id),
+        role_code: Some(inserted_role.role_code),
+        role_name: Some(inserted_role.role_name),
+        permission_ids: Some(permission_ids),
+        role_desc: inserted_role.description,
+        status: inserted_role.status.to_string(),
+    };
+
+    Ok(RoleCreationResponseDto { base: role_dto })
 }
 
 //get_roles 获取角色列表
-pub async fn get_roles(db: &DatabaseConnection) -> Result<Vec<sys_role::Model>, DbErr> {
-    SysRole::find().all(db).await
+// src/services/sys_role_services.rs
+pub async fn get_roles(
+    db: &DatabaseConnection,
+    current: u32,
+    size: u32,
+) -> Result<PaginationResponseDto<RoleDto>, DbErr> {
+    let offset = (current - 1) * size;
+    let roles = sys_role::Entity::find()
+        .limit(size as u64)
+        .offset(offset as u64)
+        .all(db)
+        .await?;
+
+    let total = sys_role::Entity::find().count(db).await?; // 查询总数
+
+    let mut role_all_dto = Vec::new();
+
+    for role in roles {
+        let permissions = sys_role_permission::Entity::find()
+            .filter(sys_role_permission::Column::RoleId.eq(role.id))
+            .all(db)
+            .await?;
+
+        let permission_ids = permissions
+            .into_iter()
+            .map(|rp| rp.permission_id)
+            .collect::<Vec<i32>>();
+
+        let mut role_dto = RoleDto::from(role);
+        role_dto.permission_ids = Some(permission_ids);
+
+        role_all_dto.push(role_dto);
+    }
+
+    Ok(PaginationResponseDto::new(current as u64, size as u64, total, role_all_dto))
 }
 
 //get_role_by_id 获取单个角色
 pub async fn get_role_by_id(
     db: &DatabaseConnection,
     role_id: i32,
-) -> Result<Option<sys_role::Model>, DbErr> {
-    SysRole::find_by_id(role_id).one(db).await
+) -> Result<Option<RoleCreationResponseDto>, DbErr> {
+    // Find the role by ID
+    if let Some(role) = sys_role::Entity::find_by_id(role_id).one(db).await? {
+        // Find permissions associated with the role
+        let permissions = sys_role_permission::Entity::find()
+            .filter(sys_role_permission::Column::RoleId.eq(role.id))
+            .all(db)
+            .await?;
+
+        let permission_ids = permissions
+            .into_iter()
+            .map(|rp| rp.permission_id)
+            .collect::<Vec<i32>>();
+
+        let mut role_dto = RoleDto::from(role);
+        role_dto.permission_ids = Some(permission_ids);
+
+        Ok(Some(RoleCreationResponseDto { base: role_dto }))
+    } else {
+        Ok(None)
+    }
 }
 
-//update_role 更新角色
 pub async fn update_role(
     db: &DatabaseConnection,
     role_id: i32,
-    role_update_info: sys_role_dto::RoleUpdateDto,
-) -> Result<Option<sys_role::Model>, DbErr> {
-    let mut role: sys_role::ActiveModel =
-        SysRole::find_by_id(role_id).one(db).await?.unwrap().into();
+    role_update_info: RoleUpdateDto,
+) -> Result<RoleCreationResponseDto, DbErr> {
+    // Start a transaction
+    let txn = db.begin().await?;
 
+    // Find the role by ID
+    let role_opt = SysRole::find_by_id(role_id).one(&txn).await?;
+    let mut role: sys_role::ActiveModel = match role_opt {
+        Some(role) => role.into(),
+        None => return Err(DbErr::RecordNotFound("Role not found".to_string())),
+    };
+
+    // Update the role fields
     if let Some(rn) = role_update_info.role_name {
         role.role_name = Set(rn);
     }
@@ -65,7 +161,49 @@ pub async fn update_role(
     if let Some(status) = role_update_info.status {
         role.status = Set(status);
     }
-    role.update(db).await.map(Some)
+    role.update(&txn).await?;
+
+    // Update role permissions
+    if let Some(permission_ids) = role_update_info.permission_ids {
+        // Remove existing permissions
+        sys_role_permission::Entity::delete_many()
+            .filter(sys_role_permission::Column::RoleId.eq(role_id))
+            .exec(&txn)
+            .await?;
+
+        // Add new permissions
+        for permission_id in permission_ids {
+            let role_permission = sys_role_permission::ActiveModel {
+                role_id: Set(role_id),
+                permission_id: Set(permission_id),
+                create_user: Set("update_user".to_string()), // Update this to the actual user if needed
+                ..Default::default()
+            };
+
+            role_permission.insert(&txn).await?;
+        }
+    }
+
+    // Commit the transaction
+    txn.commit().await?;
+
+    // Query the updated role with permissions
+    let updated_role = SysRole::find_by_id(role_id).one(db).await?.unwrap();
+    let permissions = sys_role_permission::Entity::find()
+        .filter(sys_role_permission::Column::RoleId.eq(updated_role.id))
+        .all(db)
+        .await?;
+
+    let permission_ids = permissions
+        .into_iter()
+        .map(|rp| rp.permission_id)
+        .collect::<Vec<i32>>();
+
+    let mut role_dto = RoleDto::from(updated_role);
+    role_dto.permission_ids = Some(permission_ids);
+
+
+    Ok(RoleCreationResponseDto { base: role_dto })
 }
 
 //delete_role 删除角色
