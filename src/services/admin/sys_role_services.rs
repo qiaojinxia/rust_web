@@ -1,11 +1,12 @@
 use crate::schemas::admin::prelude::SysRole;
 use crate::schemas::admin::{sys_role, sys_role_permission};
 use sea_orm::ActiveValue::Set;
-use sea_orm::{QueryFilter, QuerySelect, TransactionTrait};
+use sea_orm::{ConnectionTrait, QueryFilter, QuerySelect, Statement, TransactionTrait};
 use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, DbErr, EntityTrait};
 use crate::dto::admin::common_dto::PaginationResponseDto;
 use crate::dto::admin::sys_role_dto::{RoleCreationDto, RoleCreationResponseDto, RoleDto, RoleUpdateDto};
 use sea_orm::PaginatorTrait;
+use sea_orm::sea_query::{MysqlQueryBuilder, Query};
 
 //create_role 创建角色
 pub async fn create_role(
@@ -152,14 +153,14 @@ pub async fn update_role(
     if let Some(rn) = role_update_info.role_name {
         role.role_name = Set(rn);
     }
-    if let Some(dsc) = role_update_info.description {
+    if let Some(dsc) = role_update_info.role_desc {
         role.description = Set(Some(dsc));
     }
     if let Some(code) = role_update_info.role_code {
         role.role_code = Set(code);
     }
     if let Some(status) = role_update_info.status {
-        role.status = Set(status);
+        role.status = Set(status.parse().unwrap());
     }
     role.update(&txn).await?;
 
@@ -216,6 +217,27 @@ pub async fn delete_role(db: &DatabaseConnection, role_id: i32) -> Result<u64, D
         .exec(db)
         .await
         .map(|res| res.rows_affected)
+}
+
+pub async fn delete_roles(db: &DatabaseConnection, role_ids: Vec<i32>) -> Result<u64, DbErr> {
+    // 构建 SQL 删除语句
+    let delete_statement = Query::delete()
+        .from_table(sys_role::Entity)
+        .and_where(sys_role::Column::Id.is_in(role_ids))
+        .to_owned();
+
+    // 将查询语句转换为 SQL 语句和参数
+    let (sql, values) = delete_statement.build(MysqlQueryBuilder);
+
+    // 执行 SQL 语句
+    let result = db.execute(Statement::from_sql_and_values(
+        sea_orm::DatabaseBackend::MySql,
+        &sql,
+        values,
+    )).await?;
+
+    // 返回影响的行数
+    Ok(result.rows_affected())
 }
 
 // 根据 role_code 数组返回所有匹配的 id

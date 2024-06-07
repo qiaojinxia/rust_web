@@ -75,7 +75,7 @@ mod tests {
         let role_update_dto = RoleUpdateDto {
             role_code: Some("new_role_code".to_string()),
             role_name: Some("new_role_name".to_string()),
-            description: Some("Updated Role Description".to_string()),
+            role_desc: Some("Updated Role Description".to_string()),
             status: Some(0),
         };
 

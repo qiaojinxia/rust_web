@@ -75,6 +75,7 @@ pub struct RoleResponseDto {
 
 
 #[derive(Debug, Serialize, Deserialize, Validate)]
+#[serde(rename_all = "camelCase")]
 pub struct RoleUpdateDto {
     #[validate(length(
         min = 1,
@@ -94,8 +95,8 @@ pub struct RoleUpdateDto {
         message = "description must be between 1 and 512 characters long"
     ))]
     pub permission_ids:Option<Vec<i32>>,
-    pub description: Option<String>,
-    pub status: Option<i8>,
+    pub role_desc: Option<String>,
+    pub status: Option<String>,
 }
 
 
@@ -105,11 +106,19 @@ pub struct RoleUpdateRespDto {
     pub role: Option<RoleDto>,
 }
 
-/// Role Deletion Response DTO
-/// Method: DELETE
-/// API: /roles/{id}
-/// Description: DTO for the response after deleting a role.
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct RoleDeleteRespDto {
     pub role_id: Option<i8>,
+}
+
+
+
+/// Role Deletion Response DTO
+/// Method: DELETE
+/// API: /roles
+/// Description: DTO for the response after deleting roles.
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RolesDeleteRespDto {
+    pub deleted_role_ids: Vec<i32>,
 }

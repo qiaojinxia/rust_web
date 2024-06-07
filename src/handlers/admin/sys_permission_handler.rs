@@ -154,7 +154,7 @@ async fn delete_permission(
     create_response!(result)
 }
 
-// Remember to add these handlers to your Actix Web app configuration
+
 pub fn api_config(cfg: &mut web::ServiceConfig) {
     cfg.service(create_permission)
         .service(get_permissions)

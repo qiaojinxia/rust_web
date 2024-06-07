@@ -347,7 +347,7 @@ pub async fn get_paginated_permissions_with_menus_apis(
                     }
                 })
                 .collect();
-            // Parse the menus and apis fields into Vecs of (name, id)
+            // Parse the menus and apis fields into Vec of (name, id)
             let menu_details: Vec<String> = menus
                 .split(',')
                 .filter_map(|s| s.parse().ok())
@@ -367,7 +367,6 @@ pub async fn get_paginated_permissions_with_menus_apis(
                     }
                 })
                 .collect();
-            // Construct your DTO
             PermissionDetailsDto {
                 id: permission_id,
                 permission_name,

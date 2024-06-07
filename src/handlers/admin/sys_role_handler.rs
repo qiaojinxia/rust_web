@@ -3,7 +3,7 @@ use crate::common::resp::ApiResponse;
 use crate::config::globals;
 use crate::create_response;
 use crate::dto::admin::sys_role_dto;
-use crate::dto::admin::sys_role_dto::RoleDeleteRespDto;
+use crate::dto::admin::sys_role_dto::{RoleDeleteRespDto, RolesDeleteRespDto};
 use crate::services::admin::sys_role_services;
 use actix_web::ResponseError;
 use actix_web::{delete, get, post, put, web, HttpResponse, Responder};
@@ -122,10 +122,37 @@ pub async fn delete_role(
     create_response!(result)
 }
 
+//批量删除角色
+#[delete("/roles")]
+pub async fn delete_roles(
+    app_state: web::Data<globals::AppState>,
+    role_ids: web::Json<Vec<i32>>,
+) -> impl Responder {
+    let role_ids = role_ids.into_inner();
+    let result: Result<Option<RolesDeleteRespDto>, ApiError>;
+
+    match sys_role_services::delete_roles(&*app_state.mysql_conn, role_ids.clone()).await {
+        Ok(rows) if rows > 0 => {
+            result = Ok(Some(RolesDeleteRespDto {
+                deleted_role_ids: role_ids,
+            }));
+        }
+        Ok(_) => {
+            result = Err(ApiError::NotFound("Roles not found".to_string()));
+        }
+        Err(error) => {
+            result = Err(ApiError::InternalServerError(error.to_string()));
+        }
+    }
+    create_response!(result)
+}
+
 pub fn api_config(cfg: &mut web::ServiceConfig) {
     cfg.service(create_role)
         .service(get_roles)
         .service(get_role_by_id)
         .service(update_role)
+        .service(delete_roles)
         .service(delete_role);
+
 }
