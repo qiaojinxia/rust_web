@@ -35,3 +35,4 @@ mockall = "0.12.1"
 actix-cors = "0.7.0"
 actix-session = { version = "0.9.0", features = ["redis-rs-session"] }
 time = "0.3.34"
+regex = "1.10.4"

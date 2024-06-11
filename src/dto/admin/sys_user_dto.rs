@@ -1,27 +1,23 @@
 use crate::schemas::admin::sys_user::Model;
 use serde::{Deserialize, Serialize};
 use validator::Validate;
+use crate::dto::admin::common_dto::{validate_mobile, validate_status, validate_gender};
 
 #[derive(Debug, Deserialize, Serialize, Validate)]
+#[serde(rename_all = "camelCase")]
 pub struct UserCreateDto {
-    #[serde(rename = "id")]
-    pub id: i32,
     #[validate(length(min = 1))]
-    #[serde(rename = "userName")]
     pub user_name: String,
-    #[serde(rename = "Password")]
+    #[validate(length(min = 6))]
     pub password: String,
-    #[serde(rename = "nickName")]
     pub nick_name: String,
     #[validate(email)]
-    #[serde(rename = "userEmail")]
     pub user_email: String,
-    #[serde(rename = "userPhone")]
+    #[validate(custom(function = "validate_mobile"))]
     pub user_phone: String,
-    #[serde(rename = "userGender")]
+    #[validate(length(min = 1), custom(function = "validate_gender"))]
     pub user_gender: String,
-    // #[validate(range(min = 1, max = 2))]
-    #[serde(rename = "status")]
+    #[validate(length(min = 1), custom(function = "validate_status"))]
     pub status: String,
     #[serde(rename = "userRoles")]
     pub user_roles: Option<Vec<i32>>,
@@ -34,30 +30,19 @@ pub struct UserCreateRespDto {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct UserWithRolesDto {
-    #[serde(rename = "id")]
     pub id: i32,
-    #[serde(rename = "userName")]
     pub user_name: String,
-    #[serde(rename = "nickName")]
     pub nick_name: String,
-    #[serde(rename = "userEmail")]
     pub user_email: String,
-    #[serde(rename = "userPhone")]
     pub user_phone: String,
-    #[serde(rename = "userGender")]
     pub user_gender: String,
-    #[serde(rename = "status")]
     pub status: String,
-    #[serde(rename = "createBy")]
     pub create_by: String,
-    #[serde(rename = "createTime")]
     pub create_time: String,
-    #[serde(rename = "updateBy")]
     pub update_by: String,
-    #[serde(rename = "updateTime")]
     pub update_time: String,
-    #[serde(rename = "userRoles")]
     pub user_roles: Option<Vec<i32>>,
 }
 

@@ -24,7 +24,6 @@ pub struct Model {
     pub update_user: Option<String>,
     pub update_time: Option<DateTimeUtc>,
     pub last_login: Option<DateTimeUtc>,
-    #[sea_orm(column_name = "status_")]
     pub status: i8,
 }
 

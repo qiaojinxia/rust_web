@@ -30,12 +30,12 @@ pub enum ApiMethod {
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
 #[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "gender")]
 pub enum Gender {
-    #[sea_orm(string_value = "M")]
-    M,
-    #[sea_orm(string_value = "F")]
-    F,
-    #[sea_orm(string_value = "O")]
-    O,
+    #[sea_orm(string_value = "1")]
+    _1,
+    #[sea_orm(string_value = "2")]
+    _2,
+    #[sea_orm(string_value = "3")]
+    _3,
 }
 #[derive(Debug, Clone, PartialEq, Eq, EnumIter, DeriveActiveEnum, Serialize, Deserialize)]
 #[sea_orm(rs_type = "String", db_type = "Enum", enum_name = "target_type")]

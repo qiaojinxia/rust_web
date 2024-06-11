@@ -2,7 +2,6 @@
 
 pub mod prelude;
 
-pub mod impl_for;
 pub mod sea_orm_active_enums;
 pub mod sys_api;
 pub mod sys_menu;
@@ -13,3 +12,4 @@ pub mod sys_role;
 pub mod sys_role_permission;
 pub mod sys_user;
 pub mod sys_user_role;
+pub mod impl_for;

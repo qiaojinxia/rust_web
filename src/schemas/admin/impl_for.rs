@@ -1,5 +1,6 @@
+use std::str::FromStr;
 use crate::common::error::MyError;
-use crate::schemas::admin::sea_orm_active_enums::{ActionCode, TargetType, Type};
+use crate::schemas::admin::sea_orm_active_enums::{ActionCode, Gender, TargetType, Type};
 
 impl Type {
     pub fn from_string(s: &str) -> Result<Self, MyError> {
@@ -58,6 +59,19 @@ impl ActionCode {
                 "invalid ActionCode {}",
                 s
             ))),
+        }
+    }
+}
+
+impl FromStr for Gender {
+    type Err = ();
+
+    fn from_str(input: &str) -> Result<Gender, Self::Err> {
+        match input {
+            "1" => Ok(Gender::_1),
+            "2" => Ok(Gender::_2),
+            "3" => Ok(Gender::_3),
+            _ => Err(()),
         }
     }
 }

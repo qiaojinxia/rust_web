@@ -6,7 +6,7 @@ CREATE TABLE sys_user (
                           nick_name VARCHAR(64) NOT NULL  COMMENT '昵称',
                           password VARCHAR(256) NOT NULL COMMENT '密码',
                           email VARCHAR(128) NOT NULL UNIQUE COMMENT '邮箱',
-                          gender ENUM('M', 'F', 'O') NOT NULL COMMENT '性别',
+                          gender ENUM('1', '2', '3') NOT NULL COMMENT '性别(1.男 2.女 2.未知)',
                           mobile VARCHAR(15) UNIQUE COMMENT '手机号码',
                           avatar VARCHAR(256) COMMENT '头像',
                           create_user VARCHAR(64) NOT NULL COMMENT '创建者',
@@ -14,7 +14,7 @@ CREATE TABLE sys_user (
                           update_user VARCHAR(64)  COMMENT '更新者',
                           update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
                           last_login TIMESTAMP COMMENT '上次登录时间',
-                          status_ TINYINT(1) NOT NULL DEFAULT 1 COMMENT '用户状态 1(enable)/2(disabled)',
+                          status TINYINT(1) NOT NULL DEFAULT 1 COMMENT '用户状态 1(enable)/2(disabled)',
                           INDEX idx_user_name (user_name),
                           INDEX idx_mobile (mobile)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;

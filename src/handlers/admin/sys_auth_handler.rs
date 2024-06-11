@@ -71,7 +71,7 @@ async fn user_info() -> impl Responder {
         roles: vec!["R_SUPER".to_string()],
     };
 
-    let rs: Result<ApiResponse<UserInfo>, ApiError> = Ok(ApiResponse::success(user1));
+    let rs: Result<UserInfo, ApiError> = Ok(user1);
 
     create_response!(rs)
 }
