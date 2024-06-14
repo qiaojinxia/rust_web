@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 #[sea_orm(table_name = "sys_permission_target")]
 pub struct Model {
     #[sea_orm(primary_key, auto_increment = false)]
-    pub permission_id: i32,
+    pub permission_code: String,
     #[sea_orm(primary_key, auto_increment = false)]
     pub target_id: i32,
     #[sea_orm(primary_key, auto_increment = false)]
@@ -19,8 +19,8 @@ pub struct Model {
 pub enum Relation {
     #[sea_orm(
         belongs_to = "super::sys_permission::Entity",
-        from = "Column::PermissionId",
-        to = "super::sys_permission::Column::Id",
+        from = "Column::PermissionCode",
+        to = "super::sys_permission::Column::PermissionCode",
         on_update = "Restrict",
         on_delete = "Cascade"
     )]

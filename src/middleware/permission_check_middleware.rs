@@ -1,8 +1,6 @@
 use crate::common::auth::jwt::Claims;
 use crate::common::resp::create_error_response;
 use crate::config::globals;
-use crate::services::admin::sys_role_permission_services::get_menus_by_role_id;
-use crate::services::admin::sys_role_services::get_role_ids_by_role_codes;
 use actix_service::{Service, Transform};
 use actix_web::http::StatusCode;
 use actix_web::{dev::ServiceRequest, dev::ServiceResponse, web, Error, HttpMessage};
@@ -13,6 +11,7 @@ use std::{
     pin::Pin,
     task::{Context, Poll},
 };
+use crate::services::admin::sys_role_permission_services::get_menus_by_role_codes;
 
 pub struct PermissionCheck;
 
@@ -77,28 +76,19 @@ where
                 ));
             }
             // 首先根据角色代码获取角色ID
-            match get_role_ids_by_role_codes(&*mysql_conn, roles).await {
-                Ok(role_ids) => {
-                    // 然后根据角色ID获取菜单信息
-                    match get_menus_by_role_id(&*mysql_conn, role_ids).await {
-                        Ok(permissions) => {
-                            // 检查请求路径是否在用户的权限内
-                            let allowed =
-                                permissions.iter().any(|perm| path.starts_with(&perm.route));
-                            if allowed {
-                                let fut = service.call(req);
-                                fut.await
-                            } else {
-                                Err(create_error_response(
-                                    "Authorization Failed",
-                                    StatusCode::UNAUTHORIZED,
-                                ))
-                            }
-                        }
-                        Err(_) => Err(create_error_response(
+            // 然后根据角色ID获取菜单信息
+            match get_menus_by_role_codes(&*mysql_conn, roles).await {
+                Ok(permissions) => {
+                    // 检查请求路径是否在用户的权限内
+                    let allowed = permissions.iter().any(|perm| path.starts_with(&perm.route));
+                    if allowed {
+                        let fut = service.call(req);
+                        fut.await
+                    } else {
+                        Err(create_error_response(
                             "Authorization Failed",
                             StatusCode::UNAUTHORIZED,
-                        )),
+                        ))
                     }
                 }
                 Err(_) => Err(create_error_response(

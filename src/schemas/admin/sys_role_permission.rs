@@ -8,8 +8,8 @@ use serde::{Deserialize, Serialize};
 pub struct Model {
     #[sea_orm(primary_key)]
     pub id: i32,
-    pub role_id: i32,
-    pub permission_id: i32,
+    pub role_code: String,
+    pub permission_code: String,
     pub create_user: String,
     pub create_time: Option<DateTimeUtc>,
     pub update_user: Option<String>,
@@ -20,16 +20,16 @@ pub struct Model {
 pub enum Relation {
     #[sea_orm(
         belongs_to = "super::sys_permission::Entity",
-        from = "Column::PermissionId",
-        to = "super::sys_permission::Column::Id",
+        from = "Column::PermissionCode",
+        to = "super::sys_permission::Column::PermissionCode",
         on_update = "Restrict",
         on_delete = "Cascade"
     )]
     SysPermission,
     #[sea_orm(
         belongs_to = "super::sys_role::Entity",
-        from = "Column::RoleId",
-        to = "super::sys_role::Column::Id",
+        from = "Column::RoleCode",
+        to = "super::sys_role::Column::RoleCode",
         on_update = "Restrict",
         on_delete = "Cascade"
     )]

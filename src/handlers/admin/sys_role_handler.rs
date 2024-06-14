@@ -2,13 +2,13 @@ use crate::common::resp::ApiError;
 use crate::common::resp::ApiResponse;
 use crate::config::globals;
 use crate::create_response;
+use crate::dto::admin::common_dto::PaginationQueryDto;
 use crate::dto::admin::sys_role_dto;
 use crate::dto::admin::sys_role_dto::{RoleDeleteRespDto, RolesDeleteRespDto};
 use crate::services::admin::sys_role_services;
 use actix_web::ResponseError;
 use actix_web::{delete, get, post, put, web, HttpResponse, Responder};
 use validator::Validate;
-use crate::dto::admin::common_dto::PaginationQueryDto;
 
 // 创建角色
 #[post("/roles")]
@@ -29,9 +29,9 @@ pub async fn create_role(
         "admin".to_string(),
         role_create_dto.into_inner(),
     )
-        .await
-        .map(|role_resp| role_resp) // 返回创建后的完整数据
-        .map_err(|error| ApiError::BadRequest(error.to_string()));
+    .await
+    .map(|role_resp| role_resp) // 返回创建后的完整数据
+    .map_err(|error| ApiError::BadRequest(error.to_string()));
 
     create_response!(result)
 }
@@ -52,15 +52,25 @@ pub async fn get_roles(
     create_response!(result)
 }
 
-// 获取单个角色
-#[get("/roles/{id}")]
-pub async fn get_role_by_id(
-    app_state: web::Data<globals::AppState>,
-    path: web::Path<i32>,
-) -> impl Responder {
-    let role_id = path.into_inner();
+// Route to get all roles
+#[get("/roles-options")]
+pub async fn get_roles_options(app_state: web::Data<globals::AppState>) -> impl Responder {
+    let result = sys_role_services::get_all_roles(&*app_state.mysql_conn)
+        .await
+        .map_err(|error| ApiError::BadRequest(error.to_string()));
 
-    let result = sys_role_services::get_role_by_id(&*app_state.mysql_conn, role_id)
+    create_response!(result)
+}
+
+// 获取单个角色
+#[get("/roles/{code}")]
+pub async fn get_role_by_code(
+    app_state: web::Data<globals::AppState>,
+    path: web::Path<String>,
+) -> impl Responder {
+    let role_code = path.into_inner();
+
+    let result = sys_role_services::get_role_by_code(&*app_state.mysql_conn, role_code)
         .await
         .map(|opt_role_resp| opt_role_resp) // 返回完整的角色响应数据
         .map_err(|error| ApiError::InternalServerError(error.to_string()));
@@ -68,15 +78,14 @@ pub async fn get_role_by_id(
     create_response!(result)
 }
 
-
 // 更新角色
-#[put("/roles/{id}")]
+#[put("/roles/{code}")]
 pub async fn update_role(
     app_state: web::Data<globals::AppState>,
-    path: web::Path<i32>,
+    path: web::Path<String>,
     role_update_dto: web::Json<sys_role_dto::RoleUpdateDto>,
 ) -> impl Responder {
-    let role_id = path.into_inner();
+    let role_code = path.into_inner();
 
     // 使用早返回处理验证错误
     if let Err(e) = role_update_dto.0.validate() {
@@ -88,28 +97,29 @@ pub async fn update_role(
     // 将业务逻辑处理结果映射到响应
     let result = sys_role_services::update_role(
         &*app_state.mysql_conn,
-        role_id,
+        role_code,
         role_update_dto.into_inner(),
+        "admin".to_string(),
     )
-        .await
-        .map(|role_resp| role_resp) // 返回更新后的完整数据
-        .map_err(|error| ApiError::InternalServerError(error.to_string()));
+    .await
+    .map(|role_resp| role_resp) // 返回更新后的完整数据
+    .map_err(|error| ApiError::InternalServerError(error.to_string()));
 
     create_response!(result)
 }
 
 // 删除角色
-#[delete("/roles/{id}")]
+#[delete("/roles/{code}")]
 pub async fn delete_role(
     app_state: web::Data<globals::AppState>,
-    path: web::Path<i32>,
+    path: web::Path<String>,
 ) -> impl Responder {
-    let role_id = path.into_inner();
+    let role_code = path.into_inner();
     let result: Result<Option<RoleDeleteRespDto>, ApiError>;
-    match sys_role_services::delete_role(&*app_state.mysql_conn, role_id).await {
+    match sys_role_services::delete_role(&*app_state.mysql_conn, role_code.clone()).await {
         Ok(rows) if rows > 0 => {
             result = Ok(Some(RoleDeleteRespDto {
-                role_id: Some(role_id as i8),
+                role_code: Some(role_code),
             }));
         }
         Ok(_) => {
@@ -126,15 +136,15 @@ pub async fn delete_role(
 #[delete("/roles")]
 pub async fn delete_roles(
     app_state: web::Data<globals::AppState>,
-    role_ids: web::Json<Vec<i32>>,
+    role_codes: web::Json<Vec<String>>,
 ) -> impl Responder {
-    let role_ids = role_ids.into_inner();
+    let role_codes = role_codes.into_inner();
     let result: Result<Option<RolesDeleteRespDto>, ApiError>;
 
-    match sys_role_services::delete_roles(&*app_state.mysql_conn, role_ids.clone()).await {
+    match sys_role_services::delete_roles(&*app_state.mysql_conn, role_codes.clone()).await {
         Ok(rows) if rows > 0 => {
             result = Ok(Some(RolesDeleteRespDto {
-                deleted_role_ids: role_ids,
+                deleted_role_codes: role_codes,
             }));
         }
         Ok(_) => {
@@ -150,9 +160,9 @@ pub async fn delete_roles(
 pub fn api_config(cfg: &mut web::ServiceConfig) {
     cfg.service(create_role)
         .service(get_roles)
-        .service(get_role_by_id)
+        .service(get_roles_options)
+        .service(get_role_by_code)
         .service(update_role)
         .service(delete_roles)
         .service(delete_role);
-
 }

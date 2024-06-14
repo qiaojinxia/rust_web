@@ -17,7 +17,10 @@ pub async fn create_user(
     create_user: String,
 ) -> Result<sys_user::Model, DbErr> {
     let password_hash = auth::crypto::hash_password(Some(user_create_req.password)).unwrap(); // 假设这是一个外部函数，用于安全地散列密码
-    let gender = user_create_req.user_gender.parse::<Gender>().map_err(|_| DbErr::Custom("Invalid gender".to_string()))?;
+    let gender = user_create_req
+        .user_gender
+        .parse::<Gender>()
+        .map_err(|_| DbErr::Custom("Invalid gender".to_string()))?;
     let user = sys_user::ActiveModel {
         user_name: Set(user_create_req.user_name),
         password: Set(password_hash),
@@ -25,7 +28,7 @@ pub async fn create_user(
         email: Set(user_create_req.user_email),
         mobile: Set(Some(user_create_req.user_phone)),
         status: Set(user_create_req.status.parse().unwrap()),
-        gender:Set(gender),
+        gender: Set(gender),
         create_user: Set(create_user),
         ..Default::default()
     };
@@ -67,8 +70,8 @@ pub async fn get_users_with_roles(
         )
         .left_join(
             sys_role::Entity,
-            Expr::col((sys_user_role::Entity, sys_user_role::Column::RoleId))
-                .equals((sys_role::Entity, sys_role::Column::Id)),
+            Expr::col((sys_user_role::Entity, sys_user_role::Column::RoleCode))
+                .equals((sys_role::Entity, sys_role::Column::RoleCode)),
         )
         .group_by_col((sys_user::Entity, sys_user::Column::Id)) // Group by to use aggregate function
         .limit(size as u64) // Pagination
@@ -85,14 +88,16 @@ pub async fn get_users_with_roles(
             let nick_name = row.try_get_by("nick_name").unwrap_or_default();
             let user_email = row.try_get_by("email").unwrap_or_default();
             let user_phone = row.try_get_by("mobile").unwrap_or_default();
-            let user_gender: String  = row.try_get_by("gender").unwrap_or_default();
+            let user_gender: String = row.try_get_by("gender").unwrap_or_default();
             let status: i32 = row.try_get_by("status").unwrap_or_default();
             let create_by = row.try_get_by("create_user").unwrap_or_default();
-            let create_time: chrono::NaiveDateTime = row.try_get_by("create_time").unwrap_or_default();
+            let create_time: chrono::NaiveDateTime =
+                row.try_get_by("create_time").unwrap_or_default();
             let update_by = row.try_get_by("update_user").unwrap_or_default();
-            let update_time: chrono::NaiveDateTime = row.try_get_by("update_time").unwrap_or_default();
+            let update_time: chrono::NaiveDateTime =
+                row.try_get_by("update_time").unwrap_or_default();
             let role_codes: String = row.try_get_by("role_codes").unwrap_or_default();
-            let user_roles: Result<Vec<i32>, _> = role_codes
+            let user_roles: Result<Vec<String>, _> = role_codes
                 .split(',')
                 .map(|code| code.trim().parse())
                 .collect();
@@ -103,9 +108,9 @@ pub async fn get_users_with_roles(
                 user_email,
                 user_phone,
                 user_gender,
-                status:status.to_string(),
+                status: status.to_string(),
                 create_by,
-                create_time:format!("{}", create_time.format("%Y-%m-%d %H:%M:%S")) ,
+                create_time: format!("{}", create_time.format("%Y-%m-%d %H:%M:%S")),
                 update_by,
                 update_time: format!("{}", update_time.format("%Y-%m-%d %H:%M:%S")),
                 user_roles: Some(user_roles.unwrap_or(vec![])),

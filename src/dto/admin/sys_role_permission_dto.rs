@@ -4,15 +4,15 @@ use serde::{Deserialize, Serialize};
 // DTO for assigning permissions to a role
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AssignPermissionsDto {
-    pub permission_ids: Vec<i32>,
+    pub permission_codes: Vec<String>,
 }
 
 // DTO for representing a single permission of a role
 #[derive(Debug, Serialize, Deserialize)]
 pub struct RolePermissionDto {
     pub id: i32,
-    pub role_id: i32,
-    pub permission_id: i32,
+    pub role_code: String,
+    pub permission_code: String,
     pub create_user: String,
 }
 
@@ -20,8 +20,8 @@ impl From<Model> for RolePermissionDto {
     fn from(model: Model) -> Self {
         RolePermissionDto {
             id: model.id,
-            role_id: model.role_id,
-            permission_id: model.permission_id,
+            role_code: model.role_code,
+            permission_code: model.permission_code,
             create_user: model.create_user,
         }
     }

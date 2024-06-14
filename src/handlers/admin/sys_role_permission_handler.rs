@@ -12,17 +12,17 @@ use actix_web::ResponseError;
 use actix_web::{delete, get, post, web, HttpResponse, Responder};
 
 // Assign permissions to a role
-#[post("/roles/{roleId}/permissions")]
+#[post("/roles/{roleCode}/permissions")]
 async fn assign_permissions(
     app_state: web::Data<globals::AppState>,
-    path: web::Path<i32>,
+    path: web::Path<String>,
     permissions_dto: web::Json<AssignPermissionsDto>,
 ) -> impl Responder {
-    let role_id = path.into_inner();
+    let role_code = path.into_inner();
     let result = assign_permissions_to_role(
         &*app_state.mysql_conn,
-        role_id,
-        permissions_dto.permission_ids.clone(),
+        role_code,
+        permissions_dto.permission_codes.clone(),
         "admin".to_string(),
     )
     .await
@@ -33,13 +33,13 @@ async fn assign_permissions(
 }
 
 // Get a role's permissions
-#[get("/roles/{roleId}/permissions")]
+#[get("/roles/{roleCode}/permissions")]
 async fn get_permissions(
     app_state: web::Data<globals::AppState>,
-    path: web::Path<i32>,
+    path: web::Path<String>,
 ) -> impl Responder {
-    let role_id = path.into_inner();
-    let result = get_role_permissions(&*app_state.mysql_conn, role_id)
+    let role_code = path.into_inner();
+    let result = get_role_permissions(&*app_state.mysql_conn, role_code)
         .await
         .map(|permissions| {
             permissions
@@ -53,13 +53,13 @@ async fn get_permissions(
     create_response!(result)
 }
 
-#[delete("/roles/{roleId}/permissions/{permissionId}")]
+#[delete("/roles/{roleCode}/permissions/{permissionCode}")]
 async fn remove_permission(
     app_state: web::Data<globals::AppState>,
-    path: web::Path<(i32, i32)>,
+    path: web::Path<(String, String)>,
 ) -> impl Responder {
-    let (role_id, permission_id) = path.into_inner();
-    let result = remove_permission_from_role(&*app_state.mysql_conn, role_id, permission_id)
+    let (role_code, permission_code) = path.into_inner();
+    let result = remove_permission_from_role(&*app_state.mysql_conn, role_code, permission_code)
         .await
         .map(|_| RemovePermissionRespDto { success: true })
         .map_err(|error| ApiError::InternalServerError(error.to_string()));

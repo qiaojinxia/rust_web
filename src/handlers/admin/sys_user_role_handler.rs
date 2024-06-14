@@ -24,11 +24,11 @@ async fn assign_roles(
             ApiError::InvalidArgument(errors.to_string())
         ));
     }
-    let role_ids = roles_dto.into_inner().role_ids;
+    let role_codes = roles_dto.into_inner().role_codes;
     let result = assign_roles_to_user(
         &*app_state.mysql_conn,
         user_id,
-        role_ids,
+        role_codes,
         "admin".to_string(),
     )
     .await
@@ -50,7 +50,7 @@ async fn get_roles(
         .map(|roles| {
             roles
                 .iter()
-                .map(|role| UserRoleDto::from(role.clone())) // 在这里进行解引用
+                .map(|role| UserRoleDto::from(role.clone())) // Convert each role to UserRoleDto
                 .collect::<Vec<UserRoleDto>>()
         })
         .map(|roles| UserRolesRespDto { roles })
@@ -60,13 +60,13 @@ async fn get_roles(
 }
 
 // Remove a role from a user
-#[delete("/users/{userId}/roles/{roleId}")]
+#[delete("/users/{userId}/roles/{roleCode}")]
 async fn remove_role(
     app_state: web::Data<globals::AppState>,
-    path: web::Path<(i32, i32)>,
+    path: web::Path<(i32, String)>,
 ) -> impl Responder {
-    let (user_id, role_id) = path.into_inner();
-    let result = remove_role_from_user(&*app_state.mysql_conn, user_id, role_id)
+    let (user_id, role_code) = path.into_inner();
+    let result = remove_role_from_user(&*app_state.mysql_conn, user_id, role_code)
         .await
         .map(|_| RemoveRoleRespDto { success: true })
         .map_err(|error| ApiError::InternalServerError(error.to_string()));
@@ -74,7 +74,7 @@ async fn remove_role(
     create_response!(result)
 }
 
-// Remember to register these handlers in your Actix Web app configuration
+// Register API handlers in Actix Web app configuration
 pub fn api_config(cfg: &mut web::ServiceConfig) {
     cfg.service(assign_roles)
         .service(get_roles)

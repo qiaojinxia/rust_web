@@ -4,12 +4,12 @@ use crate::create_response;
 use crate::dto::admin::common_dto;
 use crate::dto::admin::common_dto::PaginationResponseDto;
 use crate::dto::admin::sys_user_dto::{UserCreateDto, UserCreateRespDto, UserWithRolesDto};
-use crate::services::admin::{sys_user_services};
+use crate::services::admin::sys_user_role_services::assign_roles_to_user;
+use crate::services::admin::sys_user_services;
 use actix_web::HttpResponse;
 use actix_web::ResponseError;
 use actix_web::{get, post, web, Responder};
 use validator::Validate;
-use crate::services::admin::sys_user_role_services::assign_roles_to_user;
 
 #[post("/users")]
 pub async fn create_user(
@@ -32,7 +32,8 @@ pub async fn create_user(
         user_create_dto.into_inner(),
         "admin".to_string(),
     )
-        .await {
+    .await
+    {
         Ok(user) => user,
         Err(err) => {
             result = Err(ApiError::InternalServerError(err.to_string()));
@@ -42,7 +43,14 @@ pub async fn create_user(
 
     // Assign roles to the user if roles are provided
     if let Some(ref r) = roles {
-        if let Err(err) = assign_roles_to_user(&*app_state.mysql_conn, user.id, r.clone(), "admin".to_string()).await {
+        if let Err(err) = assign_roles_to_user(
+            &*app_state.mysql_conn,
+            user.id,
+            r.clone(),
+            "admin".to_string(),
+        )
+        .await
+        {
             result = Err(ApiError::InternalServerError(err.to_string()));
             return create_response!(result);
         }
@@ -56,7 +64,6 @@ pub async fn create_user(
     // Create and return the response
     create_response!(result)
 }
-
 
 #[get("/users")]
 pub async fn get_users_with_roles(
