@@ -146,7 +146,7 @@ pub async fn update_menu(
 
     menu.is_hidden = Set(i8::from(menu_update_req.is_hidden));
 
-    // Handle the meta object
+    // Handle the metaObject
     let mut meta = json!({
         "icon": menu_update_req.icon,
         "icon_type": menu_update_req.icon_type,
@@ -307,6 +307,5 @@ pub fn build_menu_tree(menus: Vec<sys_menu::Model>) -> MenuTreeResponseDto {
         }
     }
 
-    let x = root.borrow().to_serializable();
-    x
+    let resp = root.borrow().to_serializable(); resp
 }

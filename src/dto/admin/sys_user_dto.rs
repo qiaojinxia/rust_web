@@ -1,7 +1,7 @@
+use crate::dto::admin::common_dto::{validate_gender, validate_mobile, validate_status};
 use crate::schemas::admin::sys_user::Model;
 use serde::{Deserialize, Serialize};
 use validator::Validate;
-use crate::dto::admin::common_dto::{validate_mobile, validate_status, validate_gender};
 
 #[derive(Debug, Deserialize, Serialize, Validate)]
 #[serde(rename_all = "camelCase")]
@@ -63,7 +63,7 @@ impl From<(Model, Option<Vec<i32>>)> for UserWithRolesDto {
             nick_name: user.nick_name,
             user_email: user.email,
             user_phone: user.mobile.unwrap_or_default(),
-            user_gender: "M".to_string(),
+            user_gender: "1".to_string(),
             status: user.status.to_string(),
             create_by: user.create_user,
             create_time: user
@@ -76,4 +76,24 @@ impl From<(Model, Option<Vec<i32>>)> for UserWithRolesDto {
             user_roles: roles,
         }
     }
+}
+
+#[derive(Debug, Deserialize, Serialize, Validate)]
+#[serde(rename_all = "camelCase")]
+pub struct UserUpdateDto {
+    #[validate(length(min = 1))]
+    pub user_name: Option<String>,
+    #[validate(length(min = 6))]
+    pub password: Option<String>,
+    pub nick_name: Option<String>,
+    #[validate(email)]
+    pub user_email: String,
+    #[validate(custom(function = "validate_mobile"))]
+    pub user_phone: String,
+    #[validate(length(min = 1), custom(function = "validate_gender"))]
+    pub user_gender: String,
+    #[validate(length(min = 1), custom(function = "validate_status"))]
+    pub status: String,
+    #[serde(rename = "userRoles")]
+    pub user_roles: Option<Vec<i32>>,
 }

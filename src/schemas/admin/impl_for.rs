@@ -1,6 +1,6 @@
-use std::str::FromStr;
 use crate::common::error::MyError;
 use crate::schemas::admin::sea_orm_active_enums::{ActionCode, Gender, TargetType, Type};
+use std::str::FromStr;
 
 impl Type {
     pub fn from_string(s: &str) -> Result<Self, MyError> {

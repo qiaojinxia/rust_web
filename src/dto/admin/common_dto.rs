@@ -1,6 +1,6 @@
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use validator::ValidationError;
-use regex::Regex;
 
 #[derive(Serialize, Deserialize)]
 pub struct PaginationResponseDto<T> {
