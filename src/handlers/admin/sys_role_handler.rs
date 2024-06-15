@@ -52,6 +52,16 @@ pub async fn get_roles(
     create_response!(result)
 }
 
+// Route to get all roles
+#[get("/roles-options")]
+pub async fn get_roles_options(app_state: web::Data<globals::AppState>) -> impl Responder {
+    let result = sys_role_services::get_all_roles(&*app_state.mysql_conn)
+        .await
+        .map_err(|error| ApiError::BadRequest(error.to_string()));
+
+    create_response!(result)
+}
+
 // 获取单个角色
 #[get("/roles/{id}")]
 pub async fn get_role_by_id(
@@ -151,6 +161,7 @@ pub fn api_config(cfg: &mut web::ServiceConfig) {
     cfg.service(create_role)
         .service(get_roles)
         .service(get_role_by_id)
+        .service(get_roles_options)
         .service(update_role)
         .service(delete_roles)
         .service(delete_role);

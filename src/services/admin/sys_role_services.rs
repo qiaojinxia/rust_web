@@ -4,7 +4,7 @@ use sea_orm::ActiveValue::Set;
 use sea_orm::{ConnectionTrait, QueryFilter, QuerySelect, Statement, TransactionTrait};
 use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, DbErr, EntityTrait};
 use crate::dto::admin::common_dto::PaginationResponseDto;
-use crate::dto::admin::sys_role_dto::{RoleCreationDto, RoleCreationResponseDto, RoleDto, RoleUpdateDto};
+use crate::dto::admin::sys_role_dto::{RoleCreationDto, RoleCreationResponseDto, RoleDto, RoleOptionDto, RoleUpdateDto};
 use sea_orm::PaginatorTrait;
 use sea_orm::sea_query::{MysqlQueryBuilder, Query};
 
@@ -217,6 +217,23 @@ pub async fn delete_role(db: &DatabaseConnection, role_id: i32) -> Result<u64, D
         .exec(db)
         .await
         .map(|res| res.rows_affected)
+}
+
+
+// src/services/sys_role_services.rs
+pub async fn get_all_roles(db: &DatabaseConnection) -> Result<Vec<RoleOptionDto>, DbErr> {
+    let roles = sys_role::Entity::find()
+        .select_only()
+        .column(sys_role::Column::Id)
+        .column(sys_role::Column::RoleCode)
+        .column(sys_role::Column::RoleName)
+        .into_tuple::<(i32, String, String)>()
+        .all(db)
+        .await?;
+    
+    let role_all_dto: Vec<RoleOptionDto> = roles.into_iter().map(RoleOptionDto::from).collect();
+
+    Ok(role_all_dto)
 }
 
 pub async fn delete_roles(db: &DatabaseConnection, role_ids: Vec<i32>) -> Result<u64, DbErr> {

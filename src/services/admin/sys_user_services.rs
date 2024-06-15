@@ -1,14 +1,13 @@
+use chrono::{DateTime, Utc};
 use crate::common::auth;
 use crate::dto::admin::sys_user_dto::{UserCreateDto, UserWithRolesDto};
 use crate::schemas::admin::prelude::SysUser;
 use crate::schemas::admin::sea_orm_active_enums::Gender;
-use crate::schemas::admin::{sys_role, sys_user, sys_user_role};
-use sea_orm::sea_query::{Alias, Expr, Query};
+use crate::schemas::admin::{sys_user, sys_user_role};
+use sea_orm::sea_query::{Expr};
 use sea_orm::ActiveValue::Set;
-use sea_orm::{
-    ActiveModelTrait, ColumnTrait, ConnectionTrait, DatabaseConnection, DbErr, EntityTrait,
-    FromQueryResult, QueryFilter, QuerySelect,
-};
+use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, DbErr, EntityTrait, FromQueryResult, JoinType, QueryFilter, QuerySelect, RelationTrait};
+
 
 //create_user 创建用户
 pub async fn create_user(
@@ -32,88 +31,74 @@ pub async fn create_user(
     user.insert(db).await
 }
 
-// 定义一个表示自定义函数的结构体
+#[derive(Debug, FromQueryResult)]
+pub struct UserWithRoles {
+    pub id: i32,
+    pub user_name: String,
+    pub nick_name: Option<String>,
+    pub email: Option<String>,
+    pub mobile: Option<String>,
+    pub gender: Option<String>,
+    pub status: Option<i32>,
+    pub create_user: Option<String>,
+    pub create_time: Option<DateTime<Utc>>,
+    pub update_user: Option<String>,
+    pub update_time: Option<DateTime<Utc>>,
+    pub role_codes: Option<String>,
+}
+
 pub async fn get_users_with_roles(
     db: &DatabaseConnection,
     current: usize,
-    size: usize,
+    page_size: usize,
 ) -> Result<Vec<UserWithRolesDto>, DbErr> {
-    let offset = (current.saturating_sub(1)) * size;
-    let mut query = Query::select();
-    query
-        .columns(vec![
-            (sys_user::Entity, sys_user::Column::Id),
-            (sys_user::Entity, sys_user::Column::UserName),
-            (sys_user::Entity, sys_user::Column::NickName),
-            (sys_user::Entity, sys_user::Column::Email),
-            (sys_user::Entity, sys_user::Column::Mobile),
-            (sys_user::Entity, sys_user::Column::Gender),
-            (sys_user::Entity, sys_user::Column::Status),
-            (sys_user::Entity, sys_user::Column::CreateUser),
-            (sys_user::Entity, sys_user::Column::CreateTime),
-            (sys_user::Entity, sys_user::Column::UpdateUser),
-            (sys_user::Entity, sys_user::Column::UpdateTime),
-        ])
-        .column((sys_role::Entity, sys_role::Column::Id))
-        .expr_as(
+    let offset = (current.saturating_sub(1)) * page_size;
+    let users_with_roles: Vec<UserWithRolesDto> = sys_user::Entity::find()
+        .select_only()
+        .column(sys_user::Column::Id)
+        .column(sys_user::Column::UserName)
+        .column(sys_user::Column::NickName)
+        .column(sys_user::Column::Email)
+        .column(sys_user::Column::Mobile)
+        .column(sys_user::Column::Gender)
+        .column(sys_user::Column::Status)
+        .column(sys_user::Column::CreateUser)
+        .column(sys_user::Column::CreateTime)
+        .column(sys_user::Column::UpdateUser)
+        .column(sys_user::Column::UpdateTime)
+        .join(JoinType::InnerJoin, sys_user::Relation::SysUserRole.def())
+        .join(JoinType::InnerJoin, sys_user_role::Relation::SysRole.def())
+        .column_as(
             Expr::cust("GROUP_CONCAT(DISTINCT sys_role.role_code SEPARATOR ',')"),
-            Alias::new("role_codes"),
-        ) // Use expression with alias
-        .from(sys_user::Entity)
-        .left_join(
-            sys_user_role::Entity,
-            Expr::col((sys_user::Entity, sys_user::Column::Id))
-                .equals((sys_user_role::Entity, sys_user_role::Column::UserId)),
+            "role_codes",
         )
-        .left_join(
-            sys_role::Entity,
-            Expr::col((sys_user_role::Entity, sys_user_role::Column::RoleId))
-                .equals((sys_role::Entity, sys_role::Column::Id)),
-        )
-        .group_by_col((sys_user::Entity, sys_user::Column::Id)) // Group by to use aggregate function
-        .limit(size as u64) // Pagination
-        .offset(offset as u64);
-
-    let builder = db.get_database_backend();
-    let stmt = builder.build(&query); // 构建查询语句
-    let rows = db.query_all(stmt).await?;
-    let result: Vec<UserWithRolesDto> = rows
-        .iter()
-        .map(|row| {
-            let user_id = row.try_get_by("id").unwrap_or_default();
-            let user_name = row.try_get_by("user_name").unwrap_or_default();
-            let nick_name = row.try_get_by("nick_name").unwrap_or_default();
-            let user_email = row.try_get_by("email").unwrap_or_default();
-            let user_phone = row.try_get_by("mobile").unwrap_or_default();
-            let user_gender: String  = row.try_get_by("gender").unwrap_or_default();
-            let status: i32 = row.try_get_by("status").unwrap_or_default();
-            let create_by = row.try_get_by("create_user").unwrap_or_default();
-            let create_time: chrono::NaiveDateTime = row.try_get_by("create_time").unwrap_or_default();
-            let update_by = row.try_get_by("update_user").unwrap_or_default();
-            let update_time: chrono::NaiveDateTime = row.try_get_by("update_time").unwrap_or_default();
-            let role_codes: String = row.try_get_by("role_codes").unwrap_or_default();
-            let user_roles: Result<Vec<i32>, _> = role_codes
-                .split(',')
-                .map(|code| code.trim().parse())
-                .collect();
-            UserWithRolesDto {
-                id: user_id,
-                user_name,
-                nick_name,
-                user_email,
-                user_phone,
-                user_gender,
-                status:status.to_string(),
-                create_by,
-                create_time:format!("{}", create_time.format("%Y-%m-%d %H:%M:%S")) ,
-                update_by,
-                update_time: format!("{}", update_time.format("%Y-%m-%d %H:%M:%S")),
-                user_roles: Some(user_roles.unwrap_or(vec![])),
-            }
+        .group_by(sys_user::Column::Id)
+        .limit(Some(page_size as u64))
+        .offset(Some(offset as u64))
+        .into_model::<UserWithRoles>()
+        .all(db)
+        .await? // Execute the query
+        .into_iter() // Iterate over the results
+        .map(|user| UserWithRolesDto {
+            id: user.id,
+            user_name: user.user_name,
+            nick_name: user.nick_name.unwrap_or("".to_string()),
+            user_email: user.email.unwrap_or("".to_string()),
+            user_phone: user.mobile.unwrap_or("".to_string()),
+            user_gender: user.gender.unwrap_or("1".to_string()),
+            status: user.status.unwrap_or(1).to_string(),
+            create_by: user.create_user.unwrap_or("".to_string()),
+            create_time: user.create_time.unwrap().format("%Y-%m-%d %H:%M:%S").to_string(),
+            update_by: user.update_user.unwrap_or("".to_string()),
+            update_time: user.update_time.unwrap().format("%Y-%m-%d %H:%M:%S").to_string(),
+            user_roles: user.role_codes.as_ref().map(|codes|
+                codes.split(',')
+                    .filter_map(|code| code.trim().parse::<i32>().ok())
+                    .collect()
+            ),
         })
         .collect();
-
-    Ok(result)
+    Ok(users_with_roles)
 }
 
 //get_users 获取用户列表

@@ -23,7 +23,7 @@ where
     fn new_transform(&self, service: S) -> Self::Future {
         ready(Ok(JWTAuthHiMiddleware {
             service,
-            verification_path: vec!["/api"],
+            verification_path: vec!["/system-manage"],
             no_verification_path: vec!["/api/health-checker"],
         }))
     }

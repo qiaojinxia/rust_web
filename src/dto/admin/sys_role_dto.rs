@@ -122,3 +122,22 @@ pub struct RoleDeleteRespDto {
 pub struct RolesDeleteRespDto {
     pub deleted_role_ids: Vec<i32>,
 }
+
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RoleOptionDto {
+    pub id: Option<i32>,
+    pub role_code: Option<String>,
+    pub role_name: Option<String>,
+}
+
+impl From<(i32, String, String)> for RoleOptionDto {
+    fn from(tuple: (i32, String, String)) -> Self {
+        RoleOptionDto {
+            id: Some(tuple.0),
+            role_code: Some(tuple.1),
+            role_name: Some(tuple.2),
+        }
+    }
+}

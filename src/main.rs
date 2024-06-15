@@ -9,7 +9,7 @@ use std::thread;
 use actix_web::middleware::Logger;
 use my_gpt::config::globals;
 use my_gpt::config::globals::AppState;
-use my_gpt::{app, handlers};
+use my_gpt::{app, handlers, middleware};
 use signal_hook::consts::signal::{SIGINT, SIGTERM};
 use signal_hook::iterator::Signals;
 use time::Duration;
@@ -77,8 +77,9 @@ async fn main() -> std::io::Result<()> {
                     .configure(handlers::admin::sys_permission_handler::api_config) // role相关配置
                     .configure(handlers::admin::sys_user_role_handler::api_config) // role_user相关配置
                     .configure(handlers::admin::sys_role_permission_handler::api_config) // role_user相关配置
-                    .configure(handlers::admin::sys_user_handler::api_config), // .wrap(middleware::permission_check_middleware::PermissionCheck)
-                                                                               // .wrap(middleware::jwt_auth_middleware::JWTAuth)
+                    .configure(handlers::admin::sys_user_handler::api_config)
+                    // .wrap(middleware::permission_check_middleware::PermissionCheck)
+                                                                               .wrap(middleware::jwt_auth_middleware::JWTAuth)
             ) // 应用CORS中间件
             .wrap(Logger::new("%a %D ms %{User-Agent}i"))
     })
