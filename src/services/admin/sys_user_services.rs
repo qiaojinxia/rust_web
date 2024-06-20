@@ -1,13 +1,16 @@
-use chrono::{DateTime, Utc};
 use crate::common::auth;
-use crate::dto::admin::sys_user_dto::{UserCreateDto, UserWithRolesDto};
+use crate::common::error::MyError;
+use crate::dto::admin::sys_user_dto::{UserCreateDto, UserUpdateDto, UserWithRolesDto};
 use crate::schemas::admin::prelude::SysUser;
 use crate::schemas::admin::sea_orm_active_enums::Gender;
 use crate::schemas::admin::{sys_user, sys_user_role};
-use sea_orm::sea_query::{Expr};
+use chrono::{DateTime, Utc};
+use sea_orm::sea_query::Expr;
 use sea_orm::ActiveValue::Set;
-use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, DbErr, EntityTrait, FromQueryResult, JoinType, QueryFilter, QuerySelect, RelationTrait};
-
+use sea_orm::{
+    ActiveModelTrait, ColumnTrait, DatabaseConnection, DbErr, EntityTrait, FromQueryResult,
+    JoinType, QueryFilter, QuerySelect, RelationTrait,
+};
 
 //create_user 创建用户
 pub async fn create_user(
@@ -16,7 +19,10 @@ pub async fn create_user(
     create_user: String,
 ) -> Result<sys_user::Model, DbErr> {
     let password_hash = auth::crypto::hash_password(Some(user_create_req.password)).unwrap(); // 假设这是一个外部函数，用于安全地散列密码
-    let gender = user_create_req.user_gender.parse::<Gender>().map_err(|_| DbErr::Custom("Invalid gender".to_string()))?;
+    let gender = user_create_req
+        .user_gender
+        .parse::<Gender>()
+        .map_err(|_| DbErr::Custom("Invalid gender".to_string()))?;
     let user = sys_user::ActiveModel {
         user_name: Set(user_create_req.user_name),
         password: Set(password_hash),
@@ -24,7 +30,7 @@ pub async fn create_user(
         email: Set(user_create_req.user_email),
         mobile: Set(Some(user_create_req.user_phone)),
         status: Set(user_create_req.status.parse().unwrap()),
-        gender:Set(gender),
+        gender: Set(gender),
         create_user: Set(create_user),
         ..Default::default()
     };
@@ -66,10 +72,10 @@ pub async fn get_users_with_roles(
         .column(sys_user::Column::CreateTime)
         .column(sys_user::Column::UpdateUser)
         .column(sys_user::Column::UpdateTime)
-        .join(JoinType::InnerJoin, sys_user::Relation::SysUserRole.def())
-        .join(JoinType::InnerJoin, sys_user_role::Relation::SysRole.def())
+        .join(JoinType::LeftJoin, sys_user::Relation::SysUserRole.def())
+        .join(JoinType::LeftJoin, sys_user_role::Relation::SysRole.def())
         .column_as(
-            Expr::cust("GROUP_CONCAT(DISTINCT sys_role.role_code SEPARATOR ',')"),
+            Expr::cust("GROUP_CONCAT(DISTINCT sys_role.id SEPARATOR ',')"),
             "role_codes",
         )
         .group_by(sys_user::Column::Id)
@@ -88,14 +94,23 @@ pub async fn get_users_with_roles(
             user_gender: user.gender.unwrap_or("1".to_string()),
             status: user.status.unwrap_or(1).to_string(),
             create_by: user.create_user.unwrap_or("".to_string()),
-            create_time: user.create_time.unwrap().format("%Y-%m-%d %H:%M:%S").to_string(),
+            create_time: user
+                .create_time
+                .unwrap()
+                .format("%Y-%m-%d %H:%M:%S")
+                .to_string(),
             update_by: user.update_user.unwrap_or("".to_string()),
-            update_time: user.update_time.unwrap().format("%Y-%m-%d %H:%M:%S").to_string(),
-            user_roles: user.role_codes.as_ref().map(|codes|
-                codes.split(',')
+            update_time: user
+                .update_time
+                .unwrap()
+                .format("%Y-%m-%d %H:%M:%S")
+                .to_string(),
+            user_roles: user.role_codes.as_ref().map(|codes| {
+                codes
+                    .split(',')
                     .filter_map(|code| code.trim().parse::<i32>().ok())
                     .collect()
-            ),
+            }),
         })
         .collect();
     Ok(users_with_roles)
@@ -118,33 +133,50 @@ pub async fn get_user_by_id(
 pub async fn update_user(
     db: &DatabaseConnection,
     user_id: i32,
-    user_name: Option<String>,
-    password: Option<String>,
-    email: Option<String>,
-    gender: Option<Gender>,
-    mobile: Option<String>,
-    // ... 其他可选字段
-) -> Result<Option<sys_user::Model>, DbErr> {
-    let mut user: sys_user::ActiveModel =
-        SysUser::find_by_id(user_id).one(db).await?.unwrap().into();
+    update_dto: UserUpdateDto,
+    update_user: String,
+) -> Result<Option<sys_user::Model>, MyError> {
+    let mut user: sys_user::ActiveModel = SysUser::find_by_id(user_id)
+        .one(db)
+        .await?
+        .ok_or(MyError::NotFound("User not found".to_string()))?
+        .into();
 
-    if let Some(un) = user_name {
+    if let Some(un) = update_dto.user_name {
         user.user_name = Set(un);
     }
-    if let Some(pwd) = password {
-        user.password = Set(pwd);
+    if let Some(nn) = update_dto.nick_name {
+        user.nick_name = Set(nn);
     }
-    if let Some(em) = email {
+    if let Some(pwd) = update_dto.password {
+        user.password = Set(auth::crypto::hash_password(Some(pwd))?);
+    }
+    if let Some(em) = update_dto.user_email {
         user.email = Set(em);
     }
-    if let Some(gen) = gender {
+    if let Some(gen) = update_dto
+        .user_gender
+        .unwrap_or("1".to_string())
+        .parse::<Gender>()
+        .ok()
+    {
         user.gender = Set(gen);
     }
-    if let Some(mb) = mobile {
+    if let Some(mb) = update_dto.user_phone {
         user.mobile = Set(Some(mb));
     }
+    if let Some(st) = update_dto
+        .status
+        .unwrap_or("1".to_string())
+        .parse::<i8>()
+        .ok()
+    {
+        user.status = Set(st);
+    }
 
-    user.update(db).await.map(Some)
+    user.update_user = Set(Some(update_user));
+
+    Ok(user.update(db).await.map(Some)?)
 }
 
 //delete_user 删除用户
@@ -192,6 +224,13 @@ pub async fn find_user_by_username(
 #[derive(FromQueryResult)]
 struct TotalCount {
     total_count: i32,
+}
+
+pub async fn batch_delete_users(db: &DatabaseConnection, user_ids: Vec<i32>) -> Result<u64, DbErr> {
+    let delete_query = SysUser::delete_many().filter(sys_user::Column::Id.is_in(user_ids));
+
+    let result = delete_query.exec(db).await?;
+    Ok(result.rows_affected)
 }
 
 pub async fn get_total_users_count(db: &DatabaseConnection) -> Result<i32, DbErr> {

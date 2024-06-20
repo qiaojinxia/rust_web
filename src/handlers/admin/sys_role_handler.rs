@@ -2,13 +2,13 @@ use crate::common::resp::ApiError;
 use crate::common::resp::ApiResponse;
 use crate::config::globals;
 use crate::create_response;
+use crate::dto::admin::common_dto::PaginationQueryDto;
 use crate::dto::admin::sys_role_dto;
 use crate::dto::admin::sys_role_dto::{RoleDeleteRespDto, RolesDeleteRespDto};
 use crate::services::admin::sys_role_services;
 use actix_web::ResponseError;
 use actix_web::{delete, get, post, put, web, HttpResponse, Responder};
 use validator::Validate;
-use crate::dto::admin::common_dto::PaginationQueryDto;
 
 // 创建角色
 #[post("/roles")]
@@ -29,9 +29,9 @@ pub async fn create_role(
         "admin".to_string(),
         role_create_dto.into_inner(),
     )
-        .await
-        .map(|role_resp| role_resp) // 返回创建后的完整数据
-        .map_err(|error| ApiError::BadRequest(error.to_string()));
+    .await
+    .map(|role_resp| role_resp) // 返回创建后的完整数据
+    .map_err(|error| ApiError::BadRequest(error.to_string()));
 
     create_response!(result)
 }
@@ -78,7 +78,6 @@ pub async fn get_role_by_id(
     create_response!(result)
 }
 
-
 // 更新角色
 #[put("/roles/{id}")]
 pub async fn update_role(
@@ -101,9 +100,9 @@ pub async fn update_role(
         role_id,
         role_update_dto.into_inner(),
     )
-        .await
-        .map(|role_resp| role_resp) // 返回更新后的完整数据
-        .map_err(|error| ApiError::InternalServerError(error.to_string()));
+    .await
+    .map(|role_resp| role_resp) // 返回更新后的完整数据
+    .map_err(|error| ApiError::InternalServerError(error.to_string()));
 
     create_response!(result)
 }
@@ -165,5 +164,4 @@ pub fn api_config(cfg: &mut web::ServiceConfig) {
         .service(update_role)
         .service(delete_roles)
         .service(delete_role);
-
 }

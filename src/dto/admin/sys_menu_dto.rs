@@ -1,9 +1,9 @@
 use crate::common::value::{extract_bool, extract_i32, extract_json, extract_string};
+use crate::dto::admin::common_dto::{validate_menu_type, validate_status};
 use crate::schemas::admin::sys_menu::Model;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use validator::{Validate};
-use crate::dto::admin::common_dto::{validate_menu_type, validate_status};
+use validator::Validate;
 
 // 定义一个结构体来表示菜单按钮
 #[derive(Debug, Serialize, Deserialize)]

@@ -13,6 +13,11 @@ pub async fn assign_roles_to_user(
     role_ids: Vec<i32>,
     create_user: String,
 ) -> Result<Vec<sys_user_role::Model>, DbErr> {
+    sys_user_role::Entity::delete_many()
+        .filter(sys_user_role::Column::UserId.eq(user_id))
+        .exec(db)
+        .await?;
+
     let user_roles: Vec<sys_user_role::ActiveModel> = role_ids
         .into_iter()
         .map(|role_id| sys_user_role::ActiveModel {
@@ -23,14 +28,10 @@ pub async fn assign_roles_to_user(
         })
         .collect();
 
-    // Perform the insert operation
     sys_user_role::Entity::insert_many(user_roles)
         .exec(db)
         .await?;
 
-    // Assuming you have some way to fetch the inserted records,
-    // you might perform a query to get them or use the returning clause if your database supports it.
-    // This is a hypothetical example and will depend on your schemas and ORM's capabilities:
     let assigned_roles = sys_user_role::Entity::find()
         .filter(sys_user_role::Column::UserId.eq(user_id))
         .all(db)
@@ -38,7 +39,6 @@ pub async fn assign_roles_to_user(
 
     Ok(assigned_roles)
 }
-
 
 //get_user_roles 获取用户的角色
 pub async fn get_user_roles(

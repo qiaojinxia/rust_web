@@ -3,7 +3,10 @@ use crate::common::resp::ApiResponse;
 use crate::config::globals;
 use crate::create_response;
 use crate::dto::admin::common_dto::{PaginationQueryDto, PaginationResponseDto};
-use crate::dto::admin::sys_permission_dto::{PermissionCreationDto, PermissionCreationRespDto, PermissionDeleteRespDto, PermissionDto, PermissionRespDto, PermissionSimpleRespDto, PermissionUpdateDto, PermissionUpdateRespDto};
+use crate::dto::admin::sys_permission_dto::{
+    PermissionCreationDto, PermissionCreationRespDto, PermissionDeleteRespDto, PermissionDto,
+    PermissionRespDto, PermissionSimpleRespDto, PermissionUpdateDto, PermissionUpdateRespDto,
+};
 use crate::services::admin::sys_permission_services;
 use actix_web::ResponseError;
 use actix_web::{delete, get, post, put, web, HttpResponse, Responder};
@@ -67,7 +70,8 @@ async fn get_permission_by_id(
 ) -> impl Responder {
     let permission_id = path.into_inner();
     // Call the service to get the permission by id
-    let data = sys_permission_services::get_permission_by_id(&*app_state.mysql_conn, permission_id).await;
+    let data =
+        sys_permission_services::get_permission_by_id(&*app_state.mysql_conn, permission_id).await;
     let result;
     // Handle the result
     match data {
@@ -78,11 +82,13 @@ async fn get_permission_by_id(
                     base: PermissionDto::from(permission),
                 };
                 result = Ok(response);
-
             } else {
-                result = Err(ApiError::NotFound(format!("Permission with id {} not found", permission_id)));
+                result = Err(ApiError::NotFound(format!(
+                    "Permission with id {} not found",
+                    permission_id
+                )));
             }
-        },
+        }
         Err(error) => {
             result = Err(ApiError::NotFound(error.to_string()));
         }
@@ -90,11 +96,8 @@ async fn get_permission_by_id(
     create_response!(result)
 }
 
-
 #[get("/permissions/simple")]
-async fn get_simple_permission(
-    app_state: web::Data<globals::AppState>
-) -> impl Responder {
+async fn get_simple_permission(app_state: web::Data<globals::AppState>) -> impl Responder {
     let result = sys_permission_services::get_permissions(&*app_state.mysql_conn)
         .await
         .map(|permissions| {
@@ -111,7 +114,6 @@ async fn get_simple_permission(
         .map_err(|error| ApiError::NotFound(error.to_string()));
     create_response!(result)
 }
-
 
 // Update a permission
 #[put("/permissions/{id}")]
@@ -153,7 +155,6 @@ async fn delete_permission(
 
     create_response!(result)
 }
-
 
 pub fn api_config(cfg: &mut web::ServiceConfig) {
     cfg.service(create_permission)

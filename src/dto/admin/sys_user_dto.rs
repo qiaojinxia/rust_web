@@ -83,17 +83,17 @@ impl From<(Model, Option<Vec<i32>>)> for UserWithRolesDto {
 pub struct UserUpdateDto {
     #[validate(length(min = 1))]
     pub user_name: Option<String>,
+    pub nick_name: Option<String>,
     #[validate(length(min = 6))]
     pub password: Option<String>,
-    pub nick_name: Option<String>,
     #[validate(email)]
-    pub user_email: String,
+    pub user_email: Option<String>,
     #[validate(custom(function = "validate_mobile"))]
-    pub user_phone: String,
-    #[validate(length(min = 1), custom(function = "validate_gender"))]
-    pub user_gender: String,
-    #[validate(length(min = 1), custom(function = "validate_status"))]
-    pub status: String,
+    pub user_phone: Option<String>,
+    #[validate(custom(function = "validate_gender"))]
+    pub user_gender: Option<String>,
+    #[validate(custom(function = "validate_status"))]
+    pub status: Option<String>,
     #[serde(rename = "userRoles")]
     pub user_roles: Option<Vec<i32>>,
 }

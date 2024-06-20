@@ -9,12 +9,19 @@ pub enum MyError {
     BadRequestError(String),
     NotFound(String),
     ConversionError(String),
-    // 其他错误类型...
+    PermissionDeniedError(String),
+    BcryptError(bcrypt::BcryptError), // 其他错误类型...
 }
 
 impl From<DbErr> for MyError {
     fn from(err: DbErr) -> MyError {
         MyError::DatabaseError(err)
+    }
+}
+
+impl From<bcrypt::BcryptError> for MyError {
+    fn from(err: bcrypt::BcryptError) -> MyError {
+        MyError::BcryptError(err)
     }
 }
 
@@ -28,6 +35,8 @@ impl std::fmt::Display for MyError {
             MyError::BadRequestError(ref err) => write!(f, "Bad request error: {}", err),
             MyError::NotFound(ref err) => write!(f, "NotFound  error: {}", err),
             MyError::ConversionError(ref err) => write!(f, "ConversionError  error: {}", err),
+            MyError::PermissionDeniedError(ref msg) => write!(f, "Permission error: {}", msg),
+            MyError::BcryptError(ref msg) => write!(f, "BcryptError error: {}", msg),
         }
     }
 }

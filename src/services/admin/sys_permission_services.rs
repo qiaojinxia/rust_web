@@ -1,5 +1,7 @@
 use crate::common::error::MyError;
-use crate::dto::admin::sys_permission_dto::{ApiDetail, PermissionCreationDto, PermissionDetailsDto, PermissionDto};
+use crate::dto::admin::sys_permission_dto::{
+    ApiDetail, PermissionCreationDto, PermissionDetailsDto, PermissionDto,
+};
 use crate::schemas::admin::prelude::{SysPermission, SysRolePermission};
 use crate::schemas::admin::{
     sea_orm_active_enums, sys_api, sys_menu, sys_permission, sys_permission_action,
@@ -15,7 +17,6 @@ use sea_orm::{
     ActiveModelTrait, ConnectionTrait, DatabaseConnection, DatabaseTransaction, DbErr, EntityTrait,
     TransactionTrait,
 };
-
 
 //create_permission 创建权限
 pub async fn create_permission(
@@ -35,14 +36,22 @@ pub async fn create_permission(
     };
     let inserted_permission = permission.insert(&transaction).await?;
 
-    insert_permission_targets_for_menus(&transaction, inserted_permission.id, permission_creation_dto.menus).await?;
-    insert_permission_action_codes(&transaction, inserted_permission.id, permission_creation_dto.action_codes).await?;
+    insert_permission_targets_for_menus(
+        &transaction,
+        inserted_permission.id,
+        permission_creation_dto.menus,
+    )
+    .await?;
+    insert_permission_action_codes(
+        &transaction,
+        inserted_permission.id,
+        permission_creation_dto.action_codes,
+    )
+    .await?;
 
     transaction.commit().await?;
     Ok(inserted_permission)
 }
-
-
 
 async fn insert_permission_targets_for_menus(
     transaction: &DatabaseTransaction,
@@ -94,7 +103,6 @@ async fn insert_permission_action_codes(
     Ok(())
 }
 
-
 //get_permission_by_id 获取单个权限
 pub async fn get_permission_by_id(
     db: &DatabaseConnection,
@@ -103,18 +111,12 @@ pub async fn get_permission_by_id(
     SysPermission::find_by_id(permission_id).one(db).await
 }
 
-
 //get_permission_by_id 获取所有权限
-pub async fn get_permissions(
-    db: &DatabaseConnection,
-) -> Result<Vec<sys_permission::Model>, DbErr> {
-// 使用`find_all`方法获取所有权限记录
-    let permissions = sys_permission::Entity::find()
-        .all(db)
-        .await?;
+pub async fn get_permissions(db: &DatabaseConnection) -> Result<Vec<sys_permission::Model>, DbErr> {
+    // 使用`find_all`方法获取所有权限记录
+    let permissions = sys_permission::Entity::find().all(db).await?;
     Ok(permissions)
 }
-
 
 pub async fn update_permission(
     db: &DatabaseConnection,
@@ -156,21 +158,35 @@ pub async fn update_permission(
     }
 
     if let Some(_) = permission_update_dto.menus {
-        delete_permission_targets(&transaction, permission_id,sea_orm_active_enums::TargetType::Menu).await?;
-        insert_permission_targets_for_menus(&transaction, permission_id, permission_update_dto.menus).await?;
+        delete_permission_targets(
+            &transaction,
+            permission_id,
+            sea_orm_active_enums::TargetType::Menu,
+        )
+        .await?;
+        insert_permission_targets_for_menus(
+            &transaction,
+            permission_id,
+            permission_update_dto.menus,
+        )
+        .await?;
     }
 
     if let Some(ref actions_codes) = permission_update_dto.action_codes {
         if !actions_codes.is_empty() {
             delete_permission_action_codes(&transaction, permission_id).await?;
-            insert_permission_action_codes(&transaction, permission_id, permission_update_dto.action_codes).await?;
+            insert_permission_action_codes(
+                &transaction,
+                permission_id,
+                permission_update_dto.action_codes,
+            )
+            .await?;
         }
     }
 
     transaction.commit().await?;
     Ok(())
 }
-
 
 //delete_permission_targets 删除关联菜单
 async fn delete_permission_targets(
@@ -243,7 +259,6 @@ pub async fn delete_permission(db: &DatabaseConnection, permission_id: i32) -> R
 
     Ok(rows_affected)
 }
-
 
 pub async fn get_total_permissions_count(db: &DatabaseConnection) -> Result<i64, DbErr> {
     let mut query = Query::select();
@@ -348,10 +363,8 @@ pub async fn get_paginated_permissions_with_menus_apis(
                 })
                 .collect();
             // Parse the menus and apis fields into Vec of (name, id)
-            let menu_details: Vec<String> = menus
-                .split(',')
-                .filter_map(|s| s.parse().ok())
-                .collect();
+            let menu_details: Vec<String> =
+                menus.split(',').filter_map(|s| s.parse().ok()).collect();
 
             let api_details: Vec<ApiDetail> = apis
                 .split(',')

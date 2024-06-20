@@ -307,5 +307,6 @@ pub fn build_menu_tree(menus: Vec<sys_menu::Model>) -> MenuTreeResponseDto {
         }
     }
 
-    let resp = root.borrow().to_serializable(); resp
+    let resp = root.borrow().to_serializable();
+    resp
 }

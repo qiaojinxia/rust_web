@@ -79,7 +79,7 @@ async fn main() -> std::io::Result<()> {
                     .configure(handlers::admin::sys_role_permission_handler::api_config) // role_user相关配置
                     .configure(handlers::admin::sys_user_handler::api_config)
                     // .wrap(middleware::permission_check_middleware::PermissionCheck)
-                                                                               .wrap(middleware::jwt_auth_middleware::JWTAuth)
+                    .wrap(middleware::jwt_auth_middleware::JWTAuth),
             ) // 应用CORS中间件
             .wrap(Logger::new("%a %D ms %{User-Agent}i"))
     })
