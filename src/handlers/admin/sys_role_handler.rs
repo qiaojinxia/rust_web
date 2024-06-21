@@ -156,6 +156,23 @@ pub async fn delete_roles(
     create_response!(result)
 }
 
+
+// 获取角色的菜单
+#[get("/roles/{role_code}/menus")]
+pub async fn get_menus_by_role_code(
+    app_state: web::Data<globals::AppState>,
+    path: web::Path<String>,
+) -> impl Responder {
+    let role_code = path.into_inner();
+
+    let result = sys_role_services::get_menus_by_role_code(&*app_state.mysql_conn, &role_code)
+        .await
+        .map_err(|error| ApiError::InternalServerError(error.to_string()));
+
+    create_response!(result)
+}
+
+
 pub fn api_config(cfg: &mut web::ServiceConfig) {
     cfg.service(create_role)
         .service(get_roles)
@@ -163,5 +180,6 @@ pub fn api_config(cfg: &mut web::ServiceConfig) {
         .service(get_roles_options)
         .service(update_role)
         .service(delete_roles)
-        .service(delete_role);
+        .service(delete_role)
+        .service(get_menus_by_role_code);
 }

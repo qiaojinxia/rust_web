@@ -160,6 +160,7 @@ pub async fn delete_menus(
     create_response!(result)
 }
 
+
 pub fn api_config(cfg: &mut web::ServiceConfig) {
     cfg.service(create_menu)
         .service(get_menus)
