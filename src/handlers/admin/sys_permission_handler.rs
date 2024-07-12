@@ -3,10 +3,7 @@ use crate::common::resp::ApiResponse;
 use crate::config::globals;
 use crate::create_response;
 use crate::dto::admin::common_dto::{PaginationQueryDto, PaginationResponseDto};
-use crate::dto::admin::sys_permission_dto::{
-    PermissionCreationDto, PermissionCreationRespDto, PermissionDeleteRespDto, PermissionDto,
-    PermissionRespDto, PermissionSimpleRespDto, PermissionUpdateDto, PermissionUpdateRespDto,
-};
+use crate::dto::admin::sys_permission_dto::{PermissionCreationDto, PermissionCreationRespDto, PermissionDeleteRespDto, PermissionDto, PermissionMenuIdsRespDto, PermissionRespDto, PermissionSimpleRespDto, PermissionUpdateDto, PermissionUpdateRespDto};
 use crate::services::admin::sys_permission_services;
 use actix_web::ResponseError;
 use actix_web::{delete, get, post, put, web, HttpResponse, Responder};
@@ -132,7 +129,7 @@ async fn update_permission(
     )
     .await
     .map(|_| PermissionUpdateRespDto {
-        base: None, // base:PermissionDto::from(permission.unwrap())
+        base: None,
     })
     .map_err(|error| ApiError::InternalServerError(error.to_string()));
 
@@ -156,11 +153,26 @@ async fn delete_permission(
     create_response!(result)
 }
 
+#[get("/permissions/menus/{code}")]
+async fn get_user_menu_ids(
+    app_state: web::Data<globals::AppState>,
+    permission_code: web::Path<String>,
+) -> impl Responder {
+    let result =
+        sys_permission_services::get_menus_by_permission_code(&*app_state.mysql_conn, &permission_code).await.map(
+        | data |  PermissionMenuIdsRespDto{
+            menu_ids: data,
+        }
+    ) .map_err(|error| ApiError::InternalServerError(error.to_string()));
+    create_response!(result)
+}
+
 pub fn api_config(cfg: &mut web::ServiceConfig) {
     cfg.service(create_permission)
         .service(get_permissions)
         .service(get_simple_permission)
         .service(get_permission_by_id)
+        .service(get_user_menu_ids)
         .service(update_permission)
         .service(delete_permission);
 }

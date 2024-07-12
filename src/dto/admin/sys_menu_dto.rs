@@ -214,8 +214,10 @@ pub struct MenuDeleteResponseDto {
 
 // 定义一个用于序列化的简化版本的结构体
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct MenuTreeResponseDto {
     pub id: i32,
     pub label: String,
-    pub children: Vec<MenuTreeResponseDto>,
+    pub p_id: i32,
+    pub children: Option<Vec<MenuTreeResponseDto>>,
 }

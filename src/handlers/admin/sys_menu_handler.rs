@@ -7,7 +7,7 @@ use crate::dto::admin::sys_menu_dto::{
     MenuUpdateResponseDto,
 };
 use crate::services::admin::sys_menu_services;
-use crate::services::admin::sys_menu_services::build_menu_tree;
+use crate::services::admin::sys_menu_services::{build_menu_tree};
 use actix_web::ResponseError;
 use actix_web::{delete, get, post, put, web, HttpResponse, Responder};
 use validator::Validate;

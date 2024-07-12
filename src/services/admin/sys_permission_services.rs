@@ -282,6 +282,41 @@ pub async fn get_total_permissions_count(db: &DatabaseConnection) -> Result<i64,
     }
 }
 
+pub async fn get_menus_by_permission_code(
+    db: &DatabaseConnection,
+    permission_code: &str,
+) -> Result<Vec<i32>, MyError> {
+    let mut query = Query::select();
+    query.column((sys_menu::Entity, sys_menu::Column::Id))
+        .from(sys_permission::Entity)
+        .left_join(
+            sys_permission_target::Entity,
+            Expr::col((sys_permission::Entity, sys_permission::Column::Id))
+                .equals((sys_permission_target::Entity, sys_permission_target::Column::PermissionId)),
+        )
+        .left_join(
+            sys_menu::Entity,
+            Expr::col((sys_permission_target::Entity, sys_permission_target::Column::TargetId))
+                .equals((sys_menu::Entity, sys_menu::Column::Id))
+                .and(Expr::col((sys_permission_target::Entity, sys_permission_target::Column::TargetType))
+                    .eq(sea_orm_active_enums::TargetType::Menu)),
+        ).
+        and_where(
+        Expr::col((sys_permission::Entity, sys_permission::Column::PermissionCode)).eq(permission_code)
+    );
+
+    let builder = db.get_database_backend();
+    let stmt = builder.build(&query);
+    let rows = db.query_all(stmt).await?;
+
+    let result = rows
+        .iter()
+        .filter_map(|row| row.try_get_by::<i32, _>("id").ok())
+        .collect();
+
+    Ok(result)
+}
+
 pub async fn get_paginated_permissions_with_menus_apis(
     db: &DatabaseConnection,
     current: usize,

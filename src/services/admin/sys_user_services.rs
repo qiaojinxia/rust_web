@@ -221,6 +221,7 @@ pub async fn find_user_by_username(
     query.one(db).await
 }
 
+
 #[derive(FromQueryResult)]
 struct TotalCount {
     total_count: i32,

@@ -99,3 +99,10 @@ pub struct PermissionDetailsDto {
     pub apis: Vec<ApiDetail>,
     pub status: String,
 }
+
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PermissionMenuIdsRespDto {
+    pub menu_ids: Vec<i32>,
+}

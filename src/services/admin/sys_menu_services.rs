@@ -11,7 +11,7 @@ use sea_orm::QueryFilter;
 use sea_orm::{ActiveModelTrait, DatabaseConnection, DbErr, EntityTrait, PaginatorTrait};
 use serde::Deserialize;
 use serde_json::json;
-use std::cell::RefCell;
+use std::cell::{Ref, RefCell};
 use std::collections::HashMap;
 use std::rc::{Rc, Weak};
 
@@ -229,18 +229,34 @@ pub struct MenuTree {
     pub children: Option<RefCell<Vec<Rc<RefCell<MenuTree>>>>>,
 }
 impl MenuTree {
+    pub fn get_parent_id(&self) -> Option<i32> {
+        if let Some(weak_parent) = &self.parent {
+            if let Some(rc_parent) = weak_parent.upgrade() {
+                let parent_ref: Ref<MenuTree> = rc_parent.borrow();
+                return Some(parent_ref.id);
+            }
+        }
+        None
+    }
     // 添加一个方法来转换为可序列化的结构体
     fn to_serializable(&self) -> MenuTreeResponseDto {
         MenuTreeResponseDto {
             id: self.id,
             label: self.label.clone(),
-            children: self.children.as_ref().map_or(vec![], |children| {
-                children
-                    .borrow()
-                    .iter()
-                    .map(|child| child.borrow().to_serializable())
-                    .collect()
-            }),
+            p_id: self.get_parent_id().unwrap_or_default(),
+            children: self.children.as_ref().map(|children| {
+                let children_borrow = children.borrow();
+                if children_borrow.is_empty() {
+                    None
+                } else {
+                    Some(
+                        children_borrow
+                            .iter()
+                            .map(|child| child.borrow().to_serializable())
+                            .collect()
+                    )
+                }
+            }).flatten(),
         }
     }
 }
