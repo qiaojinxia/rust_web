@@ -17,11 +17,11 @@ pub struct MenuButton {
 pub struct MenuCreateDto {
     #[validate(length(min = 1), custom(function = "validate_menu_type"))]
     pub menu_type: String, // 菜单类型
-    #[validate(length(min = 3, max = 256))]
+    #[validate(length(min = 2, max = 256))]
     pub menu_name: String, //菜单名称
-    #[validate(length(min = 3, max = 256))]
+    #[validate(length(min = 2, max = 256))]
     pub route_name: String, //路由名称
-    #[validate(length(min = 3, max = 256))]
+    #[validate(length(min = 2, max = 256))]
     pub route_path: String, //路由路径
     pub path_param: Option<String>, //路径参数
     pub layout: Option<String>,     //布局
@@ -87,8 +87,8 @@ impl From<Model> for MenuBaseRespDto {
             route_name: model.route_name.unwrap_or_default(),
             route_path: model.route_path.unwrap_or_default(),
             component: model.component,
-            path_param: model.path_param,
-            order: model.sort.unwrap_or(0),
+            path_param: Some(extract_string(&meta, "path_param")),
+            order: extract_i32(&meta, "order").unwrap_or(0),
             constant: model.constant == 1,
             icon_type: extract_string(&meta, "icon_type"),
             icon: extract_string(&meta, "icon"),
@@ -173,11 +173,11 @@ pub struct MenuDto {
 pub struct MenuUpdateDto {
     #[validate(length(min = 1), custom(function = "validate_menu_type"))]
     pub menu_type: Option<String>, // 菜单类型
-    #[validate(length(min = 3, max = 256))]
+    #[validate(length(min = 2, max = 256))]
     pub menu_name: Option<String>, //菜单名称
-    #[validate(length(min = 3, max = 256))]
+    #[validate(length(min = 2, max = 256))]
     pub route_name: Option<String>, //路由名称
-    #[validate(length(min = 3, max = 256))]
+    #[validate(length(min = 2, max = 256))]
     pub route_path: String, //路由路径
     pub path_param: Option<String>, //路径参数
     pub layout: Option<String>,     //布局

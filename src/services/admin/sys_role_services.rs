@@ -1,14 +1,13 @@
-use std::collections::{HashMap, HashSet};
 use crate::dto::admin::common_dto::PaginationResponseDto;
-use crate::dto::admin::sys_role_dto::{ RoleCreationDto, RoleCreationResponseDto, RoleDto, RoleMenuResponseDto, RoleOptionDto, RoleUpdateDto, RouteDto};
+use crate::dto::admin::sys_role_dto::{ RoleCreationDto, RoleCreationResponseDto, RoleDto, RoleOptionDto, RoleUpdateDto};
 use crate::schemas::admin::prelude::SysRole;
-use crate::schemas::admin::{sea_orm_active_enums, sys_menu, sys_permission_target, sys_role, sys_role_permission};
+use crate::schemas::admin::{sys_role, sys_role_permission};
 use sea_orm::sea_query::{MysqlQueryBuilder, Query};
 use sea_orm::ActiveValue::Set;
 use sea_orm::PaginatorTrait;
 use sea_orm::{ActiveModelTrait, ColumnTrait, DatabaseConnection, DbErr, EntityTrait};
 use sea_orm::{ConnectionTrait, QueryFilter, QuerySelect, Statement, TransactionTrait};
-use crate::common::error::MyError;
+
 
 //create_role 创建角色
 pub async fn create_role(
@@ -264,81 +263,6 @@ pub async fn delete_roles(db: &DatabaseConnection, role_ids: Vec<i32>) -> Result
     Ok(result.rows_affected())
 }
 
-// 根据角色代码获取菜单
-pub async fn get_menus_by_role_code(
-    db: &DatabaseConnection,
-    role_code: &str,
-) -> Result<RoleMenuResponseDto, MyError> {
-    // 步骤1: 获取角色ID
-    let role = sys_role::Entity::find()
-        .filter(sys_role::Column::RoleCode.eq(role_code))
-        .one(db)
-        .await?
-        .ok_or(MyError::NotFound("Role not found".to_string()))?;
-
-    // 步骤2: 获取角色权限ID
-    let permissions = sys_role_permission::Entity::find()
-        .filter(sys_role_permission::Column::RoleId.eq(role.id))
-        .all(db)
-        .await?;
-
-    let permission_ids: HashSet<i32> = permissions.into_iter().map(|rp| rp.permission_id).collect();
-
-    // 步骤3: 获取权限对应的菜单ID
-    let permission_targets = sys_permission_target::Entity::find()
-        .filter(sys_permission_target::Column::PermissionId.is_in(permission_ids))
-        .filter(sys_permission_target::Column::TargetType.eq(sea_orm_active_enums::TargetType::Menu))
-        .all(db)
-        .await?;
-
-    let menu_ids: HashSet<i32> = permission_targets.into_iter().map(|pt| pt.target_id).collect();
-
-    // 步骤4: 获取菜单详情
-    let menus = sys_menu::Entity::find()
-        .filter(sys_menu::Column::Id.is_in(menu_ids))
-        .all(db)
-        .await?;
-
-
-
-    // 将菜单详情映射到 HashMap，以便快速查找
-    let mut menu_map: HashMap<i32, RouteDto> = HashMap::new();
-    for menu in &menus {
-        let route_dto = RouteDto {
-            id: menu.id,
-            name: menu.menu_name.clone().unwrap_or_default(),
-            path: menu.route_path.clone().unwrap_or_default(),
-            component: menu.component.clone(),
-            meta: menu.meta.clone(),
-            children: None,
-        };
-        menu_map.insert(menu.id, route_dto);
-    }
-
-    // 构建菜单树
-    let mut roots: Vec<RouteDto> = Vec::new();
-    // for menu in menus {
-    //     if let Some(parent_id) = menu.parent_id {
-    //         if let Some(mut parent) = menu_map.remove(&menu.id) {
-    //             let children = parent.children.get_or_insert(Vec::new());
-    //             if let Some(child) = menu_map.remove(&menu.id) {
-    //                 children.push(child);
-    //             }
-    //             menu_map.insert(parent_id, parent);
-    //         }
-    //     } else {
-    //         if let Some(root) = menu_map.remove(&menu.id) {
-    //             roots.push(root);
-    //         }
-    //     }
-    // }
-
-    let role_menu_resp = RoleMenuResponseDto{
-        home: "home".to_string(),
-        routes: roots,
-    };
-    Ok(role_menu_resp)
-}
 
 // 根据 role_code 数组返回所有匹配的 id
 pub async fn get_role_ids_by_role_codes(

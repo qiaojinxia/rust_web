@@ -23,12 +23,12 @@ mod user_role_tests {
     use actix_web::web::Data;
     use actix_web::App;
     use actix_web::{http, test};
-    use my_gpt::config::globals::AppState;
-    use my_gpt::config::globals::APP_STATE;
-    use my_gpt::dto::admin::sys_user_role_dto::{
+    use rust_web::config::globals::AppState;
+    use rust_web::config::globals::APP_STATE;
+    use rust_web::dto::admin::sys_user_role_dto::{
         AssignRolesDto, AssignRolesRespDto, RemoveRoleRespDto, UserRolesRespDto,
     };
-    use my_gpt::{app, common, handlers};
+    use rust_web::{app, common, handlers};
 
     #[actix_rt::test]
     async fn test_assign_roles_to_user() {

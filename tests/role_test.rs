@@ -21,15 +21,15 @@ macro_rules! setup_test_app {
 
 #[cfg(test)]
 mod tests {
-    use crate::tests::globals::APP_STATE;
+
     use actix_web::middleware::Logger;
     use actix_web::web::Data;
     use actix_web::{http, test, App};
-    use my_gpt::config::globals;
-    use my_gpt::config::globals::AppState;
-    use my_gpt::dto::admin::sys_role_dto::RoleCreationDto;
-    use my_gpt::dto::admin::sys_role_dto::RoleCreationResponseDto;
-    use my_gpt::{app, common, handlers};
+    use rust_web::config::globals;
+    use rust_web::config::globals::AppState;
+    use rust_web::dto::admin::sys_role_dto::RoleCreationDto;
+    use rust_web::dto::admin::sys_role_dto::RoleCreationResponseDto;
+    use rust_web::{app, common, handlers};
     #[actix_rt::test]
     async fn test_create_role() {
         let app = setup_test_app!();
@@ -53,7 +53,7 @@ mod tests {
         assert_eq!(resp.data.base.role_code, role_creation_dto.role_code);
     }
 
-    use my_gpt::dto::admin::sys_role_dto::RoleResponseDto;
+    use rust_web::dto::admin::sys_role_dto::RoleResponseDto;
     #[actix_rt::test]
     async fn test_get_roles() {
         let app = setup_test_app!();
@@ -66,8 +66,8 @@ mod tests {
         assert!(!resp.data.role.is_none()); // 假设数据库中至少有一个角色
     }
 
-    use my_gpt::dto::admin::sys_role_dto::RoleUpdateDto;
-    use my_gpt::dto::admin::sys_role_dto::RoleUpdateRespDto;
+    use rust_web::dto::admin::sys_role_dto::RoleUpdateDto;
+    use rust_web::dto::admin::sys_role_dto::RoleUpdateRespDto;
     #[actix_rt::test]
     async fn test_update_role() {
         let app = setup_test_app!();
@@ -90,7 +90,7 @@ mod tests {
         assert_eq!(resp.data.role.unwrap().role_name, role_update_dto.role_name);
     }
 
-    use my_gpt::dto::admin::sys_role_dto::RoleDeleteRespDto;
+    use rust_web::dto::admin::sys_role_dto::RoleDeleteRespDto;
     #[actix_rt::test]
     async fn test_delete_role_endpoint() {
         let app = setup_test_app!();

@@ -1,7 +1,8 @@
 // tests/jwt_integration_test.rs
 
-use my_gpt::common::auth;
-use my_gpt::common::auth::jwt;
+use rust_web::common::auth;
+use rust_web::common::auth::jwt;
+
 #[test]
 fn test_jwt_integration() {
     let user_name = "integration_test_user";

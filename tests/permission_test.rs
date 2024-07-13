@@ -24,13 +24,13 @@ mod permission_tests {
     use actix_web::web::Data;
     use actix_web::App;
     use actix_web::{http, test};
-    use my_gpt::config::globals::AppState;
-    use my_gpt::config::globals::APP_STATE;
-    use my_gpt::dto::admin::sys_permission_dto::{
+    use rust_web::config::globals::AppState;
+    use rust_web::config::globals::APP_STATE;
+    use rust_web::dto::admin::sys_permission_dto::{
         PermissionCreationDto, PermissionCreationRespDto, PermissionDeleteRespDto,
-        PermissionRespDto, PermissionUpdateDto, PermissionUpdateRespDto, PermissionsRespDto,
+        PermissionRespDto, PermissionUpdateDto, PermissionUpdateRespDto,
     };
-    use my_gpt::{app, common, handlers};
+    use rust_web::{app, common, handlers};
 
     // 这里假设你已经有了setup_test_app宏，可以直接使用
     #[actix_rt::test]

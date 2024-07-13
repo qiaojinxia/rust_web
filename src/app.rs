@@ -31,7 +31,7 @@ pub async fn init_redis(cfg: &RedisConfig) -> Result<Addr<RedisActor>, Error> {
 }
 
 // 一个总的初始化函数，用于集中调用所有初始化逻辑
-pub async fn init() {
+pub async fn initialize() {
     // 初始化日志系统
     logger::config::init();
 

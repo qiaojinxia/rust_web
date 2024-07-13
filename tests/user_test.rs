@@ -1,6 +1,6 @@
-use my_gpt::config::globals::APP_STATE;
-use my_gpt::services::admin::sys_user_services::get_users_with_roles;
-use my_gpt::{app, common, handlers};
+use rust_web::config::globals::APP_STATE;
+use rust_web::services::admin::sys_user_services::get_users_with_roles;
+use rust_web::{app, common, handlers};
 #[actix_rt::test]
 async fn test_get_menus_by_role_id() {
     app::init().await;

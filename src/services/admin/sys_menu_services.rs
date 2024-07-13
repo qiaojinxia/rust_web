@@ -34,19 +34,19 @@ pub async fn create_menu(
         )?),
         route_path: Set(Some(menu_create_req.route_path)),
         route_name: Set(Some(menu_create_req.route_name)),
-        path_param: Set(menu_create_req.path_param),
         parent_id: Set(parent_id),
         create_user: Set(create_user),
         status: Set(menu_create_req.status.parse::<i8>().unwrap_or(1)),
         is_hidden: Set(i8::from(menu_create_req.is_hidden)),
         create_time: Set(Some(Utc::now())),
-        sort: Set(Some(menu_create_req.order)), // Assuming order is present in MenuCreateDto
         component: Set(menu_create_req.component),
         constant: Set(i8::from(menu_create_req.constant)),
         ..Default::default()
     };
 
     let mut meta = json!({
+        "path_param": menu_create_req.path_param,
+        "order": menu_create_req.order,
         "icon": menu_create_req.icon,
         "icon_type": menu_create_req.icon_type,
         "layout": menu_create_req.layout.unwrap_or_else(|| "base".to_string()),
@@ -127,8 +127,6 @@ pub async fn update_menu(
     } else {
         Some(menu_update_req.parent_id)
     });
-    menu.sort = Set(Some(menu_update_req.order));
-    menu.path_param = Set(menu_update_req.path_param);
     menu.constant = Set(i8::from(menu_update_req.constant));
     if let Some(component) = menu_update_req.component {
         menu.component = Set(Some(component));
@@ -148,6 +146,8 @@ pub async fn update_menu(
 
     // Handle the metaObject
     let mut meta = json!({
+        "path_param": menu_update_req.path_param,
+        "order": menu_update_req.order,
         "icon": menu_update_req.icon,
         "icon_type": menu_update_req.icon_type,
         "layout": menu_update_req.layout.unwrap_or_else(|| "base".to_string()),
