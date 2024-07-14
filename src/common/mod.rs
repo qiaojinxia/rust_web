@@ -5,3 +5,4 @@ pub mod log;
 pub mod redis;
 pub mod resp;
 pub mod value;
+pub mod enums;

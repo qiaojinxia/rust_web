@@ -1,8 +1,9 @@
-use crate::common::value::{extract_bool, extract_i32, extract_json, extract_string};
-use crate::dto::admin::common_dto::{validate_menu_type, validate_status};
+use std::cell::RefCell;
+use std::rc::Rc;
+use crate::dto::admin::common_dto::{validate_menu_type, validate_status, validate_icon_type};
 use crate::schemas::admin::sys_menu::Model;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{Value};
 use validator::Validate;
 
 // 定义一个结构体来表示菜单按钮
@@ -23,10 +24,10 @@ pub struct MenuCreateDto {
     pub route_name: String, //路由名称
     #[validate(length(min = 2, max = 256))]
     pub route_path: String, //路由路径
-    pub path_param: Option<String>, //路径参数
     pub layout: Option<String>,     //布局
     pub i18n_key: Option<String>,   //国际化key
     pub order: i32,                 //排序
+    #[validate(length(min = 1), custom(function = "validate_icon_type"))]
     pub icon_type: String,          //图标类型
     pub icon: Option<String>,       //图标
     #[validate(length(min = 1), custom(function = "validate_status"))]
@@ -34,8 +35,7 @@ pub struct MenuCreateDto {
     pub keep_alive: bool,           //缓存路由
     pub constant: bool,             //常量路由
     pub href: Option<String>,       //外链
-    #[serde(rename = "hideInMenu")]
-    pub is_hidden: bool, // 隐藏菜单
+    pub hide_in_menu: bool, // 隐藏菜单
     pub multi_tab: bool,            // 支持多页签
     pub parent_id: i32,             //父菜单
     pub fixed_index_in_tab: Option<i32>, //固定在页签中的序号
@@ -68,7 +68,6 @@ pub struct MenuBaseRespDto {
     pub href: Option<String>,
     pub hide_in_menu: bool,
     pub active_menu: Option<String>,
-    pub path_param: Option<String>,
     pub multi_tab: bool,
     pub fixed_index_in_tab: Option<i32>,
     pub query: Option<Value>,
@@ -78,8 +77,7 @@ pub struct MenuBaseRespDto {
 impl From<Model> for MenuBaseRespDto {
     fn from(model: Model) -> Self {
         // 确保 meta 字段不为空
-        let meta = model.meta.unwrap_or_default();
-        MenuBaseRespDto {
+        let mut menu_base_resp_dto = MenuBaseRespDto {
             id: model.id,
             parent_id: model.parent_id.unwrap_or_default(),
             menu_type: model.r#type.get_serial_number().unwrap_or("1").to_string(),
@@ -87,67 +85,34 @@ impl From<Model> for MenuBaseRespDto {
             route_name: model.route_name.unwrap_or_default(),
             route_path: model.route_path.unwrap_or_default(),
             component: model.component,
-            path_param: Some(extract_string(&meta, "path_param")),
-            order: extract_i32(&meta, "order").unwrap_or(0),
+            order: model.order.unwrap_or(0),
             constant: model.constant == 1,
-            icon_type: extract_string(&meta, "icon_type"),
-            icon: extract_string(&meta, "icon"),
-            buttons: meta.get("buttons").and_then(|v| {
-                v.as_array().map(|a| {
-                    a.iter()
-                        .map(|v| MenuButton {
-                            code: v
-                                .get("code")
-                                .map_or("".to_string(), |v| v.as_str().unwrap_or("").to_string()),
-                            desc: v
-                                .get("desc")
-                                .map_or("".to_string(), |v| v.as_str().unwrap_or("").to_string()),
-                        })
-                        .collect()
-                })
-            }),
-            children: None,
-            // 下面是 MenuPropsOfRoute 的字段
-            i18n_key: Some(extract_string(&meta, "i18n_key")),
-            keep_alive: extract_bool(&meta, "keep_alive").unwrap_or(false),
-            href: Some(extract_string(&meta, "href")),
-            hide_in_menu: model.is_hidden == 1,
-            active_menu: Some(extract_string(&meta, "active_menu")),
-            multi_tab: extract_bool(&meta, "multi_tab").unwrap_or(false),
-            fixed_index_in_tab: extract_i32(&meta, "fixed_index_in_tab"),
-            query: extract_json(&meta, "query"),
-            status: model.status.to_string(),
-        }
-    }
-}
-
-impl Default for MenuBaseRespDto {
-    fn default() -> Self {
-        MenuBaseRespDto {
-            id: 0,
-            parent_id: 0,
-            menu_type: "1".to_string(),
-            menu_name: "empty".to_string(),
-            route_name: "".to_string(),
-            route_path: "".to_string(),
-            path_param: None,
-            component: None,
-            icon: "".to_string(),
+            icon: model.icon.clone().unwrap_or_default(),
             icon_type: "".to_string(),
-            buttons: None,
+            buttons: Some(vec![]),
             children: None,
-            i18n_key: None,
-            keep_alive: false,
-            constant: false,
-            order: 0,
-            href: None,
-            hide_in_menu: false,
-            active_menu: None,
-            multi_tab: false,
-            fixed_index_in_tab: None,
-            query: None,
-            status: "2".to_string(),
+            i18n_key: model.i18n_key.clone(),
+            keep_alive: model.keep_alive.unwrap_or(0) == 1,
+            href: model.href.clone(),
+            hide_in_menu: model.hide_in_menu.unwrap_or(0) == 1,
+            active_menu: model.active_menu.clone(),
+            multi_tab: model.multi_tab.unwrap_or(0) == 1,
+            fixed_index_in_tab: model.fixed_index_in_tab,
+            query: model.query.clone(),
+            status: model.status.to_string(),
+        };
+        let mut icon_type = "1".to_string();
+        match model.local_icon{
+            Some(icon) => {
+                if icon != ""{
+                    icon_type = "2".to_string();
+                    menu_base_resp_dto.icon = icon;
+                }
+            },
+            None  => {},
         }
+        menu_base_resp_dto.icon_type = icon_type;
+        menu_base_resp_dto
     }
 }
 
@@ -178,22 +143,21 @@ pub struct MenuUpdateDto {
     #[validate(length(min = 2, max = 256))]
     pub route_name: Option<String>, //路由名称
     #[validate(length(min = 2, max = 256))]
-    pub route_path: String, //路由路径
-    pub path_param: Option<String>, //路径参数
+    pub route_path: Option<String>, //路由路径
     pub layout: Option<String>,     //布局
     pub i18n_key: Option<String>,   //国际化key
-    pub order: i32,                 //排序
-    pub icon_type: String,          //图标类型
+    pub order: Option<i32>,                 //排序
+    #[validate(length(min = 1), custom(function = "validate_icon_type"))]
+    pub icon_type: Option<String>,          //图标类型
     pub icon: Option<String>,       //图标
     #[validate(length(min = 1), custom(function = "validate_status"))]
-    pub status: String, //菜单状态
-    pub keep_alive: bool,           //缓存路由
-    pub constant: bool,             //常量路由
+    pub status: Option<String>, //菜单状态
+    pub keep_alive: Option<bool>,           //缓存路由
+    pub constant: Option<bool>,             //常量路由
     pub href: Option<String>,       //外链
-    #[serde(rename = "hideInMenu")]
-    pub is_hidden: bool, // 隐藏菜单
-    pub multi_tab: bool,            // 支持多页签
-    pub parent_id: i32,             //父菜单
+    pub hide_in_menu: Option<bool>,         // 隐藏菜单
+    pub multi_tab: Option<bool>,            // 支持多页签
+    pub parent_id: Option<i32>,             //父菜单
     pub fixed_index_in_tab: Option<i32>, //固定在页签中的序号
     pub component: Option<String>,  //组建路径
     pub active_menu: Option<String>, // 高亮的菜单
@@ -213,11 +177,11 @@ pub struct MenuDeleteResponseDto {
 }
 
 // 定义一个用于序列化的简化版本的结构体
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MenuTreeResponseDto {
     pub id: i32,
     pub label: String,
-    pub p_id: i32,
-    pub children: Option<Vec<MenuTreeResponseDto>>,
+    pub p_id: Option<i32>,
+    pub children: Option<Vec<Rc<RefCell<MenuTreeResponseDto>>>>,
 }

@@ -49,6 +49,16 @@ pub fn validate_status(status: &str) -> Result<(), ValidationError> {
     }
 }
 
+pub fn validate_icon_type(icon_type: &str) -> Result<(), ValidationError> {
+    match icon_type {
+        "1" | "2" => Ok(()),
+        _ => {
+            let mut error = ValidationError::new("invalid_icon_type");
+            error.message = Some("The icon_type must be either '1' or '2'.".into());
+            Err(error)
+        }
+    }
+}
 pub fn validate_mobile(mobile: &str) -> Result<(), ValidationError> {
     // Define a regular expression for phone number validation.
     // This example assumes international phone numbers starting with '+' followed by 10 to 15 digits.

@@ -8,16 +8,36 @@ use crate::schemas::admin::{sea_orm_active_enums, sys_menu, sys_permission_targe
 use sea_orm::QueryFilter;
 use serde_json::json;
 
+#[repr(i8)]
+pub enum Status {
+    Enable = 1, // 将Enable与整数值1关联
+    Disable = 2, // 将Disable与整数值2关联
+}
+
 // 通用函数：构建菜单树
 fn build_menu_tree(menus: Vec<sys_menu::Model>) -> Vec<Rc<RefCell<RouteDto>>> {
     // 将菜单详情映射到 HashMap，以便快速查找
     let mut menu_map: HashMap<i32, Rc<RefCell<RouteDto>>> = HashMap::new();
     for menu in &menus {
-        let mut new_meta = menu.meta.clone().unwrap_or_else(|| json!({}));
+        let mut new_meta = json!({});
         new_meta["title"] = json!(menu.menu_name.clone().unwrap_or_default());
+        new_meta["i18nKey"] = json!(menu.i18n_key.clone());
+        new_meta["roles"] = json!(menu.roles.clone());
+        new_meta["keepAlive"] = json!(menu.keep_alive == Some(1));
+        new_meta["constant"] = json!(menu.constant == 1);
+        new_meta["icon"] = json!(menu.icon.clone());
+        new_meta["localIcon"] = json!(menu.local_icon.clone());
+        new_meta["order"] = json!(menu.order);
+        new_meta["href"] = json!(menu.href.clone());
+        new_meta["hideInMenu"] = json!(menu.hide_in_menu == Some(1));
+        new_meta["activeMenu"] = json!(menu.active_menu.clone());
+        new_meta["multiTab"] = json!(menu.multi_tab == Some(1));
+        new_meta["fixedIndexInTab"] = json!(menu.fixed_index_in_tab);
+        new_meta["query"] = json!(menu.query.clone());
+
         let route_dto = RouteDto {
             id: menu.id,
-            name: menu.menu_name.clone().unwrap_or_default(),
+            name: menu.route_name.clone().unwrap_or_default(),
             path: menu.route_path.clone().unwrap_or_default(),
             component: menu.component.clone(),
             meta: Some(new_meta),
@@ -29,18 +49,15 @@ fn build_menu_tree(menus: Vec<sys_menu::Model>) -> Vec<Rc<RefCell<RouteDto>>> {
     // 构建菜单树
     let mut roots: Vec<Rc<RefCell<RouteDto>>> = Vec::new();
     for menu in menus {
+        let cur_menu = menu_map.get(&menu.id).unwrap();
         if let Some(parent_id) = menu.parent_id {
             if let Some(parent) = menu_map.get(&parent_id) {
                 let mut parent_borrow = parent.borrow_mut();
-                let children = parent_borrow.children.get_or_insert(Vec::new());
-                if let Some(child) = menu_map.get(&menu.id) {
-                    children.push(child.clone());
-                }
+                let parent_child = parent_borrow.children.get_or_insert(Vec::new());
+                parent_child.push(cur_menu.clone());
             }
         } else {
-            if let Some(root) = menu_map.get(&menu.id) {
-                roots.push(root.clone());
-            }
+            roots.push(cur_menu.clone());
         }
     }
 
@@ -80,6 +97,7 @@ pub async fn get_menus_by_role_code(
     let menus = sys_menu::Entity::find()
         .filter(sys_menu::Column::Id.is_in(menu_ids))
         .filter(sys_menu::Column::Constant.eq(false))
+        .filter(sys_menu::Column::Status.eq(Status::Enable as i8))
         .all(db)
         .await?;
 
