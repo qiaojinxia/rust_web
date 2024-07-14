@@ -60,7 +60,6 @@ pub struct MenuBaseRespDto {
     pub icon_type: String,
     pub buttons: Option<Vec<MenuButton>>,
     pub children: Option<Vec<MenuBaseRespDto>>,
-    // 下面是 MenuPropsOfRoute 的字段
     pub i18n_key: Option<String>,
     pub keep_alive: bool,
     pub constant: bool,
