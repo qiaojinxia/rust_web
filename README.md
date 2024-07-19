@@ -29,7 +29,8 @@ basic rust web framework use actix_web,sqlx
    cd yourproject
    ```
    
-2. 编译和运行项目：
+2. 导入数据库 cmdb.sql
+3. 编译和运行项目：
 
    ```bash
       cargo build
@@ -40,6 +41,12 @@ basic rust web framework use actix_web,sqlx
 
 配置文件
 您可以在项目根目录下找到 config.toml 文件，用于配置项目的一些参数，如数据库连接信息等。请根据您的需求进行修改。
+
+4. 克隆前端仓库
+   ```bash
+   git clone https://github.com/qiaojinxia/soybean-admin-rust
+   pnpm run dev
+   ```
 
 贡献
 欢迎贡献和改进这个示例项目。如果您有任何建议或发现问题，请提出问题或发送合并请求。
